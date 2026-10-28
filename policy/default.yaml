@@ -1,0 +1,49 @@
+# ACC Agent Gate – default policy
+# Every tool call an AI agent makes is checked against this file BEFORE it
+# reaches Adobe Campaign. Decisions: allow | allow_masked | dry_run | needs_approval | block
+# Fail-closed: a tool that is not listed here is blocked.
+
+version: 1
+instance: aurora-mkt-prod          # synthetic demo instance
+kill_switch: false                 # true = every write is blocked, reads still work
+
+session_limits:
+  max_write_calls: 6               # writes (sends, workflow actions) per agent session
+  max_rows_per_query: 500          # agent never pulls bulk recipient data
+
+data:
+  mask_pii: true                   # emails, phones, names, birth dates masked in results
+
+tools:
+  campaign.discover:
+    mode: allow
+
+  schema.browse:
+    mode: allow
+
+  query.run:
+    mode: allow
+    block_sql_writes: true         # INSERT/UPDATE/DELETE/DROP/... never pass through
+    mask_pii: true
+
+  delivery.qa:
+    mode: allow
+
+  delivery.send:
+    mode: needs_approval
+    require_qa: pass_with_warnings # pass | pass_with_warnings (blockers always stop a send)
+    dual_approval_over: 200000     # very large sends need two humans
+    approver_roles: [market_owner, crm_ops_lead]
+
+  workflow.control:
+    mode: needs_approval
+    block_critical: true           # GDPR purge, unsubscribe sync, etc. are off-limits
+    stage_environment: allow       # agents may operate freely on stage
+
+  js.execute:
+    mode: dry_run                  # JS is analysed and explained, never run by default
+    block_categories: [write, send, workflow, system, egress, admin]
+
+qa:
+  quiet_hours_local: [21, 8]       # no marketing sends 21:00–08:00 market local time
+  subject_max_chars: 50            # Adobe delivery best practice: 50 chars or fewer

