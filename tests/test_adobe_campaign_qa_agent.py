@@ -139,3 +139,26 @@ def test_agent_integrates_with_registry_and_orchestrator():
     )
     assert result["status"] == "completed"
     assert result["result"]["status"] == "pass"
+
+def test_agent_validates_schedule_and_policy_ranges():
+    with pytest.raises(ValueError, match="YYYY-MM-DD HH:MM"):
+        AdobeCampaignQAAgent().run({
+            "delivery": valid_delivery(scheduled_local="tomorrow morning")
+        })
+    with pytest.raises(ValueError, match="quiet_hours_local"):
+        AdobeCampaignQAAgent().run({
+            "delivery": valid_delivery(),
+            "config": {"quiet_hours_local": [25, 8]},
+        })
+    with pytest.raises(ValueError, match="subject_max_chars"):
+        AdobeCampaignQAAgent().run({
+            "delivery": valid_delivery(),
+            "config": {"subject_max_chars": 0},
+        })
+
+
+def test_agent_rejects_non_string_typology():
+    with pytest.raises(ValueError, match="typology"):
+        AdobeCampaignQAAgent().run({
+            "delivery": valid_delivery(typology=123)
+        })
