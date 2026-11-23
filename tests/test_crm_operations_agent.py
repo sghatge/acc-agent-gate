@@ -96,3 +96,24 @@ def test_agent_wraps_provider_errors_without_exposing_exception_text():
             "objective": "Improve CRM operations",
             "use_gemini": True,
         })
+
+
+def test_agent_runs_through_registry_and_orchestrator():
+    from opsforge.agents.registry import AgentRegistry
+    from opsforge.orchestrator import Orchestrator
+
+    provider = FakeProvider("# Orchestrated CRM plan")
+    registry = AgentRegistry()
+    registry.register(CRMOperationsAgent(provider=provider))
+
+    result = Orchestrator(registry).execute(
+        "crm_operations",
+        {
+            "objective": "Improve lifecycle campaign governance",
+            "use_gemini": True,
+        },
+    )
+
+    assert result["agent"] == "crm_operations"
+    assert result["status"] == "completed"
+    assert result["result"]["execution_scope"] == "advisory_only"
