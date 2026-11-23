@@ -1,5 +1,6 @@
 """Deterministic Adobe Campaign pre-send QA agent for OPSFORGE."""
 
+from datetime import datetime
 from typing import Any
 
 from acc_agent_gate.mock_instance import Delivery, MARKETS
@@ -52,9 +53,28 @@ class AdobeCampaignQAAgent(BaseAgent):
             if key in delivery_data and not isinstance(delivery_data[key], bool):
                 raise ValueError(f"Delivery field '{key}' must be a boolean.")
 
+        try:
+            datetime.strptime(delivery_data["scheduled_local"].strip(), "%Y-%m-%d %H:%M")
+        except ValueError as exc:
+            raise ValueError("scheduled_local must use YYYY-MM-DD HH:MM local time.") from exc
+
+        typology = delivery_data.get("typology", "TY_MARKETING_EU")
+        if not isinstance(typology, str) or not typology.strip():
+            raise ValueError("Delivery field 'typology' must be a non-empty string.")
+
         config = task.get("config", {})
         if not isinstance(config, dict):
             raise ValueError("QA config must be a dictionary.")
+        quiet_hours = config.get("quiet_hours_local", [21, 8])
+        if (
+            not isinstance(quiet_hours, (list, tuple))
+            or len(quiet_hours) != 2
+            or any(isinstance(hour, bool) or not isinstance(hour, int) or not 0 <= hour <= 23 for hour in quiet_hours)
+        ):
+            raise ValueError("quiet_hours_local must contain two integer hours from 0 to 23.")
+        subject_limit = config.get("subject_max_chars", 50)
+        if isinstance(subject_limit, bool) or not isinstance(subject_limit, int) or subject_limit < 1:
+            raise ValueError("subject_max_chars must be a positive integer.")
 
         delivery = Delivery(
             id=delivery_data["id"].strip(),
@@ -66,7 +86,7 @@ class AdobeCampaignQAAgent(BaseAgent):
             body=delivery_data["body"],
             target_count=delivery_data["target_count"],
             scheduled_local=delivery_data["scheduled_local"].strip(),
-            typology=delivery_data.get("typology", "TY_MARKETING_EU"),
+            typology=typology.strip(),
             proof_sent=delivery_data.get("proof_sent", False),
             seed_list=delivery_data.get("seed_list", False),
             consent_filter=delivery_data.get("consent_filter", False),
