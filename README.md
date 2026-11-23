@@ -172,3 +172,23 @@ python -m pytest -q tests/test_gemini_provider.py tests/test_opsforge_agents.py
 ```
 
 These tests mock the Google client and do not require an API key or network access.
+
+
+### Model profiles
+
+Use Flash for the default cost-efficient agent path:
+
+```powershell
+$env:GEMINI_MODEL = "gemini-3.8-flash"
+```
+
+For a Pro-class reasoning profile, set the model explicitly to the
+currently available Pro model enabled for your Google AI Studio project:
+
+```powershell
+$env:GEMINI_MODEL = "gemini-3.1-pro-preview"
+```
+
+Model availability and billing depend on the Google API project and region.
+A Gemini app subscription does not automatically provide Gemini Developer API
+credits; verify API access and billing separately in Google AI Studio.
