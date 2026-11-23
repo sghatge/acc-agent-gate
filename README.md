@@ -122,3 +122,73 @@ Note: source [1] lists Campaign Classic with no direct endpoint and does not sta
 Independent project. Not affiliated with or endorsed by Adobe. All data, brands and deliveries are synthetic.
 
 MIT licensed · Built by Sangram Ghatge
+
+
+## OPSFORGE Gemini provider
+
+The OPSFORGE Research Agent can use the Google Gen AI SDK through
+`opsforge.providers.gemini.GeminiProvider`.
+
+### Configuration
+
+Set the API key as an environment variable; do not commit it to Git:
+
+```bash
+# macOS / Linux
+export GEMINI_API_KEY="your-google-ai-studio-api-key"
+
+# PowerShell
+$env:GEMINI_API_KEY = "your-google-ai-studio-api-key"
+```
+
+Optional model override:
+
+```bash
+# Default: gemini-3.8-flash
+$env:GEMINI_MODEL = "gemini-3.8-flash"
+```
+
+The provider also accepts `GOOGLE_API_KEY` and the legacy
+`GEMINI_API_1` variable for backward compatibility. Prefer
+`GEMINI_API_KEY` for new setups.
+
+### Verify the connection
+
+Install dependencies and run the live smoke test:
+
+```bash
+pip install -r requirements.txt
+python scripts/gemini_smoke_test.py
+```
+
+The smoke test sends one short request, confirms a known response token,
+and never prints the API key. A successful response proves API connectivity;
+it does not by itself validate agent quality or production readiness.
+
+### Offline tests
+
+```bash
+python -m pytest -q tests/test_gemini_provider.py tests/test_opsforge_agents.py
+```
+
+These tests mock the Google client and do not require an API key or network access.
+
+
+### Model profiles
+
+Use Flash for the default cost-efficient agent path:
+
+```powershell
+$env:GEMINI_MODEL = "gemini-3.8-flash"
+```
+
+For a Pro-class reasoning profile, set the model explicitly to the
+currently available Pro model enabled for your Google AI Studio project:
+
+```powershell
+$env:GEMINI_MODEL = "gemini-3.1-pro-preview"
+```
+
+Model availability and billing depend on the Google API project and region.
+A Gemini app subscription does not automatically provide Gemini Developer API
+credits; verify API access and billing separately in Google AI Studio.
