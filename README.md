@@ -192,3 +192,49 @@ $env:GEMINI_MODEL = "gemini-3.1-pro-preview"
 Model availability and billing depend on the Google API project and region.
 A Gemini app subscription does not automatically provide Gemini Developer API
 credits; verify API access and billing separately in Google AI Studio.
+
+
+## OPSFORGE CRM Operations Agent
+
+The `crm_operations` agent converts supplied operating context into an
+evidence-conscious CRM improvement plan. It is advisory-only: it does not
+connect to or change Adobe Campaign, Salesforce, or other production systems.
+
+### Example
+
+```python
+from opsforge.agents.crm_operations import CRMOperationsAgent
+from opsforge.agents.registry import AgentRegistry
+from opsforge.orchestrator import Orchestrator
+from opsforge.providers.gemini import GeminiProvider
+
+registry = AgentRegistry()
+registry.register(CRMOperationsAgent(provider=GeminiProvider()))
+orchestrator = Orchestrator(registry)
+
+result = orchestrator.execute(
+    "crm_operations",
+    {
+        "objective": "Reduce pre-send campaign QA defects",
+        "context": {
+            "platform": "Adobe Campaign Classic",
+            "current_process": "Manual pre-send checks",
+            "known_constraints": ["No production changes"],
+        },
+        "constraints": ["Use existing team capacity"],
+        "use_gemini": True,
+    },
+)
+print(result["result"]["report"])
+```
+
+The generated advisory covers current-state assessment, prioritised
+recommendations, a 30/60/90-day roadmap, KPIs, risks and evidence gaps.
+Input context is treated as unverified; the agent must label assumptions
+and must not invent performance figures or claim that actions were executed.
+
+### Test
+
+```bash
+python -m pytest -q tests/test_crm_operations_agent.py
+```
