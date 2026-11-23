@@ -23,7 +23,7 @@ def main() -> int:
         )
     except Exception as exc:
         # Do not print environment values or request headers.
-        print(f"FAIL: Gemini request failed ({type(exc).__name__}): {exc}")
+        print(f"FAIL: Gemini request failed ({type(exc).__name__}). Check API key, model access, billing, and network connectivity.")
         return 1
 
     print(f"Model: {provider.model}")
