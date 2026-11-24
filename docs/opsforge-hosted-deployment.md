@@ -70,6 +70,33 @@ A successful response should include a request ID, the authorization role and
 HTTP 401. A role attempting an agent outside its permission set should return
 HTTP 403 and create an audit event.
 
+### Repeatable smoke test (no extra dependencies)
+
+The repository includes a standard-library smoke test. It checks HTTPS,
+public health, the advisory-only response boundary and unauthenticated
+request rejection. When a token is supplied, it also runs one harmless
+synthetic research request and verifies the server-derived role.
+
+```bash
+# Public checks only
+OPSFORGE_API_URL=https://YOUR-SERVICE.onrender.com python scripts/opsforge_hosted_smoke.py
+
+# Full authenticated check; keep the token in an environment variable
+OPSFORGE_API_URL=https://YOUR-SERVICE.onrender.com OPSFORGE_API_TOKEN=YOUR_TOKEN python scripts/opsforge_hosted_smoke.py
+```
+
+On PowerShell:
+
+```powershell
+$env:OPSFORGE_API_URL = "https://YOUR-SERVICE.onrender.com"
+$env:OPSFORGE_API_TOKEN = Read-Host "Paste API token"
+python scripts/opsforge_hosted_smoke.py
+Remove-Item Env:OPSFORGE_API_TOKEN
+```
+
+The script never prints the token. Use synthetic prompts only. Do not paste
+the token into shell history, GitHub, a source file or a public chat.
+
 ## 5. Production gates before real organizational use
 
 - Put the service behind the platform's HTTPS endpoint; never expose plain HTTP.
