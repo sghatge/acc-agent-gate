@@ -66,7 +66,7 @@ def _validate_credentials(
         role = principal.get("role")
         if not isinstance(actor, str) or not _ACTOR_RE.fullmatch(actor):
             raise ValueError("Credential actor must be 1-64 safe characters.")
-        if role not in ROLE_PERMISSIONS:
+        if not isinstance(role, str) or role not in ROLE_PERMISSIONS:
             raise ValueError(f"Unsupported OPSFORGE role: {role}")
         validated[digest] = {"actor": actor, "role": role}
     return validated
