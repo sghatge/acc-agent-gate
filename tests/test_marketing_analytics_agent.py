@@ -134,3 +134,11 @@ def test_agent_integrates_with_registry_and_orchestrator():
     )
     assert result["status"] == "completed"
     assert result["result"]["overall"]["sends"] == 15000
+
+
+def test_agent_rejects_malformed_baseline_records():
+    with pytest.raises(ValueError, match="Baseline campaign at index 0"):
+        MarketingAnalyticsAgent().run({
+            "campaigns": sample_campaigns(),
+            "baseline_campaigns": ["not a record"],
+        })
