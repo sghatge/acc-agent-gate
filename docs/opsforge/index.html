@@ -97,6 +97,7 @@ async function callApi(task){
  let parsed;
  try{parsed=new URL(base)}catch(_){throw new Error("Enter a valid API URL.")}
  const localHost=["localhost","127.0.0.1","::1"].includes(parsed.hostname);
+ if(parsed.username||parsed.password||parsed.pathname!=="/"||parsed.search||parsed.hash)throw new Error("Enter an API origin only, without credentials, path, query or fragment.");
  if(parsed.protocol!=="https:"&&!(parsed.protocol==="http:"&&localHost))throw new Error("Remote API URLs must use HTTPS.");
  const routes={research:"research",crm:"crm_operations",qa:"adobe_campaign_qa",analytics:"marketing_analytics"};
  const endpoint=base+"/api/agents/"+routes[active]+"/run";
