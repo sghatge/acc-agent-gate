@@ -6,10 +6,6 @@
 
 **A governance layer between AI agents and Adobe Campaign.**
 
-**[▶ Interactive demo](https://sghatge.github.io/acc-agent-gate/)** · change the policy and watch an AI agent's Black Friday session re-run live.
-
-**A governance layer between AI agents and Adobe Campaign.**
-
 Adobe's CX Enterprise agentic tools now list Campaign Classic capabilities that include instance discovery, schema browsing, query execution, workflow control and SOAP/JS execution, reached through CX Enterprise Coworker rather than a standalone endpoint [1][2]. That is a big productivity unlock. It also means an eager agent is a few calls away from a full-table `DELETE`, a send without an unsubscribe link, or pausing your GDPR purge.
 
 ACC Agent Gate sits in the middle. Every tool call is checked against a written policy before it reaches Campaign:
@@ -129,6 +125,10 @@ Independent project. Not affiliated with or endorsed by Adobe. All data, brands 
 
 MIT licensed · Built by Sangram Ghatge
 
+
+## OPSFORGE API service
+
+The four OPSFORGE agents can be invoked through an optional bearer-authenticated HTTP API. The unified dashboard includes an explicit API mode for connecting to a self-hosted service. See [API setup, security and endpoint documentation](docs/opsforge-api.md).
 
 ## OPSFORGE Gemini provider
 
