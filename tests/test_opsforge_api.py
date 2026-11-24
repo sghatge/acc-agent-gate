@@ -194,3 +194,55 @@ def test_cors_is_exact_origin_allow_list(api_server):
         headers={"Origin": "https://untrusted.example"},
     )
     assert "Access-Control-Allow-Origin" not in rejected_headers
+
+
+
+def test_research_and_crm_routes_are_registered(api_server):
+    research_status, research_body, _ = request(
+        api_server,
+        "POST",
+        "/api/agents/research/run",
+        {"question": "How should QA be governed?", "sources": ["internal SOP"]},
+        token=TOKEN,
+    )
+    assert research_status == 200
+    assert research_body["result"]["status"] == "draft"
+
+    crm_status, crm_body, _ = request(
+        api_server,
+        "POST",
+        "/api/agents/crm_operations/run",
+        {"objective": "Improve campaign QA", "context": "Multi-market CRM operations"},
+        token=TOKEN,
+    )
+    assert crm_status == 200
+    assert crm_body["result"]["status"] == "draft"
+
+
+def test_adobe_campaign_qa_route_returns_human_review_not_send_approval(api_server):
+    delivery = {
+        "id": "API_TEST_HR",
+        "internal_name": "API_TEST_HR",
+        "market": "HR",
+        "label": "API QA sample",
+        "subject": "Campaign preview",
+        "preheader": "Sample preheader",
+        "body": "<p>Price 1.234,00 €</p><footer>Legal entity HR</footer><a>UnsubscriptionLink</a>",
+        "target_count": 1000,
+        "scheduled_local": "2026-12-01 10:00",
+        "typology": "TY_MARKETING_EU",
+        "proof_sent": True,
+        "seed_list": True,
+        "consent_filter": True,
+    }
+    status, body, _ = request(
+        api_server,
+        "POST",
+        "/api/agents/adobe_campaign_qa/run",
+        {"delivery": delivery},
+        token=TOKEN,
+    )
+    assert status == 200
+    assert body["result"]["blockers"] == []
+    assert body["result"]["send_recommendation"] == "eligible_for_human_review"
+    assert body["execution_scope"] == "advisory_only"
