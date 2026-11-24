@@ -112,12 +112,9 @@ def test_invalid_decision_is_rejected(api):
     assert store.get_request(item["ticket"])["status"] == "PENDING"
 
 
-def test_unauthorized_role_cannot_view_ticket(api):
-    server, item, _, store = api
+def test_unauthorized_role_cannot_view_ticket(api, tmp_path):
+    _, item, _, store = api
     other_token = "second-reviewer-secret-value-with-at-least-32-chars"
-    server.server_close()
-    server.shutdown()
-    # Replace fixture server with one whose identity has a non-eligible role.
     credentials = {
         token_sha256(other_token): {"reviewer": "viewer-01", "role": "viewer"}
     }
