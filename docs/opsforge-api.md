@@ -52,7 +52,7 @@ curl -X POST http://127.0.0.1:8765/api/agents/marketing_analytics/run \
   before browser access. Do not use wildcard origins with bearer credentials.
   The GitHub Pages UI does not call this API automatically.
 - Audit events are hash-chained in `var/opsforge-api-audit.jsonl`. They contain
-  actor, agent, request ID, outcome and a task digest—not prompts, source
+  an unverified actor label, agent, request ID, outcome and a task digest—not prompts, source
   content, credentials or generated reports. Protect and back up the audit file;
   a local hash chain is tamper-evident, not immutable storage.
 - Failed audit persistence withholds the API response. This is a local
