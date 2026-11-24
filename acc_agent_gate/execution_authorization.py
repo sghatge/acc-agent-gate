@@ -13,6 +13,7 @@ import json
 import secrets
 import sqlite3
 import time
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Callable
 
@@ -64,11 +65,15 @@ class SingleUseAuthorizationService:
             Path(self.database).parent.mkdir(parents=True, exist_ok=True)
         self._initialize()
 
+    @contextmanager
     def _connect(self):
         db = sqlite3.connect(self.database, timeout=10, isolation_level=None)
-        db.row_factory = sqlite3.Row
-        db.execute("PRAGMA busy_timeout = 10000")
-        return db
+        try:
+            db.row_factory = sqlite3.Row
+            db.execute("PRAGMA busy_timeout = 10000")
+            yield db
+        finally:
+            db.close()
 
     def _initialize(self) -> None:
         with self._connect() as db:
