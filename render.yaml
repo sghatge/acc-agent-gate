@@ -1,0 +1,25 @@
+# Render Blueprint for the OPSFORGE authenticated API.
+# The persistent disk is required to retain the hash-chained audit log.
+services:
+  - type: web
+    name: opsforge-agent-api
+    runtime: docker
+    plan: starter
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    disk:
+      name: opsforge-audit
+      mountPath: /var/lib/opsforge
+      sizeGB: 1
+    envVars:
+      - key: OPSFORGE_API_TOKEN
+        generateValue: true
+      - key: OPSFORGE_CORS_ORIGINS
+        value: https://sghatge.github.io
+      - key: OPSFORGE_AUDIT_PATH
+        value: /var/lib/opsforge/audit.jsonl
+      - key: OPSFORGE_ENABLE_GEMINI
+        value: "false"

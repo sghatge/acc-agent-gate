@@ -125,6 +125,10 @@ container platforms can set `PORT`; the API uses it when
 `OPSFORGE_API_PORT` is not set. Configure TLS termination, rate limiting,
 secret injection and a persistent audit volume before public deployment.
 
+### Hosted deployment
+
+For a platform-managed HTTPS deployment, follow the [Render deployment runbook](opsforge-hosted-deployment.md). The root `render.yaml` provisions the Docker service, generated operator token, exact GitHub Pages CORS origin, health check and persistent audit disk. Review data residency and plan requirements before deployment.
+
 ### Security and deployment notes
 
 - The API is advisory-only. It does not connect to or mutate Adobe Campaign,
