@@ -92,6 +92,39 @@ Set `OPSFORGE_CORS_ORIGINS` to the exact dashboard origin, for example:
 export OPSFORGE_CORS_ORIGINS="https://sghatge.github.io"
 ```
 
+
+### Container deployment
+
+The repository includes a minimal non-root Docker image for the API. Build it:
+
+```bash
+docker build -t opsforge-agent-api .
+docker volume create opsforge-api-audit
+```
+
+For the single-operator local mode:
+
+```bash
+docker run --detach --name opsforge-api \
+  --publish 8765:8765 \
+  --env OPSFORGE_API_TOKEN="$OPSFORGE_API_TOKEN" \
+  --env OPSFORGE_CORS_ORIGINS="https://sghatge.github.io" \
+  --mount source=opsforge-api-audit,target=/var/lib/opsforge \
+  --restart unless-stopped \
+  opsforge-agent-api
+```
+
+For multi-user RBAC, pass `OPSFORGE_API_CREDENTIALS_JSON` from your platform's
+secret manager instead of `OPSFORGE_API_TOKEN`. Do not put real credentials
+in a committed Compose file, Dockerfile, build argument or GitHub repository.
+
+The image listens on `0.0.0.0:8765`, runs as an unprivileged user, exposes
+`/health` for container health checks and writes the hash-chained audit log
+under `/var/lib/opsforge`. Keep that path on persistent storage. Managed
+container platforms can set `PORT`; the API uses it when
+`OPSFORGE_API_PORT` is not set. Configure TLS termination, rate limiting,
+secret injection and a persistent audit volume before public deployment.
+
 ### Security and deployment notes
 
 - The API is advisory-only. It does not connect to or mutate Adobe Campaign,

@@ -128,7 +128,7 @@ MIT licensed · Built by Sangram Ghatge
 
 ## OPSFORGE API service
 
-The four OPSFORGE agents can be invoked through an optional bearer-authenticated HTTP API with role-based permissions for analysts, QA specialists, operators and admins. The unified dashboard includes an explicit API mode for connecting to a self-hosted service. See [API setup, RBAC, security and endpoint documentation](docs/opsforge-api.md).
+The four OPSFORGE agents can be invoked through an optional bearer-authenticated HTTP API with role-based permissions for analysts, QA specialists, operators and admins. The unified dashboard includes an explicit API mode for connecting to a self-hosted service, and a non-root Docker image is provided for deployment. See [API setup, RBAC, container deployment, security and endpoint documentation](docs/opsforge-api.md).
 
 ## OPSFORGE Gemini provider
 
