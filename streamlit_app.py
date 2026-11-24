@@ -341,6 +341,27 @@ with audit_tab:
     else:
         st.info("No events yet. Run QA or request a governed send.")
 
+    st.subheader("Persistent human approval ledger")
+    ledger_items = approvals.list_requests(status="ALL", limit=500)
+    if ledger_items:
+        ledger_rows = []
+        for item in ledger_items:
+            ledger_rows.append({
+                "Ticket": item["ticket"],
+                "Campaign": item["campaign_id"],
+                "Status": item["status"],
+                "Required": item["approvals_required"],
+                "Decisions": " | ".join(
+                    f"{d['reviewer']} ({d['role']}): {d['decision']}"
+                    for d in item["decisions"]
+                ) or "No decisions yet",
+                "Payload SHA-256": item["payload_sha256"],
+                "Policy SHA-256": item["policy_sha256"],
+            })
+        st.dataframe(ledger_rows, hide_index=True, use_container_width=True)
+    else:
+        st.caption("No approval ledger records yet.")
+
     st.divider()
     st.subheader("Optional Gemini evidence explainer")
     st.caption("Gemini may explain supplied evidence in plain language. It cannot change policy, approve tickets, issue permits or execute actions.")
