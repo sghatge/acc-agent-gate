@@ -52,6 +52,10 @@ python -m acc_agent_gate.cli verify out/audit.jsonl
 python -m pytest -q                           # complete test suite
 ```
 
+### Deploy the OPSFORGE API
+
+See the [hosted deployment runbook](docs/opsforge-hosted-deployment.md) and the root-level `render.yaml` blueprint for a repeatable HTTPS deployment of the authenticated API. The hosted API is separate from the GitHub Pages dashboard and requires platform secrets plus persistent audit storage.
+
 ### Run it as an MCP server
 
 ```bash
