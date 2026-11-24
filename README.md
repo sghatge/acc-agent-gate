@@ -364,8 +364,14 @@ python -m pytest -q tests/test_marketing_analytics_agent.py
 
 ## Typed MCP Policy Server
 
-A second, typed MCP entry point now exposes the deterministic gate as
-structured campaign-governance tools:
+A typed MCP entry point exposes the deterministic gate as structured
+campaign-governance tools. Eligible send requests are also recorded in a
+SQLite-backed approval ledger with payload and policy fingerprints, role
+constraints, self-approval prevention and distinct-reviewer dual approval.
+The ledger is review evidence only: approval does not authorize or execute a
+Campaign send. See [Phase 2 architecture and security boundary](docs/MCP_POLICY_SERVER.md).
+
+Available tools:
 
 - `campaign_preflight_check` — deterministic QA with APPROVE/BLOCK evidence.
 - `campaign_request_execution` — queues eligible sends for human approval;
