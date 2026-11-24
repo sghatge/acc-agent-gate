@@ -1,10 +1,8 @@
 # ACC Agent Gate
 
+**[🛡️ Deploy the free Streamlit Governance Control Room](https://share.streamlit.io/deploy?repository=sghatge%2Facc-agent-gate&branch=main&mainModule=streamlit_app.py)** · full synthetic QA → human approval → signed permit → mock execution → audit walkthrough.
+
 **[⚡ OPSFORGE Unified Agent Workspace](https://sghatge.github.io/acc-agent-gate/opsforge/)** · explore Research, CRM Operations, Adobe Campaign QA and Marketing Analytics in one interactive synthetic-data showcase.
-
-**[▶ Interactive governance demo](https://sghatge.github.io/acc-agent-gate/)** · change the policy and watch an AI agent's Black Friday session re-run live.
-
-**[Governance OS delivery status](docs/OPSFORGE_DELIVERY_STATUS.md)** · see implemented controls and remaining production-readiness work.
 
 **A governance layer between AI agents and Adobe Campaign.**
 
