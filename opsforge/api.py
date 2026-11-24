@@ -156,7 +156,8 @@ def create_server(
         ) -> bool:
             event = {
                 "request_id": request_id,
-                "actor": actor,
+                "actor_label": actor,
+                "actor_label_verified": False,
                 "agent": agent,
                 "http_status": status,
                 "outcome": outcome,
@@ -165,7 +166,7 @@ def create_server(
             try:
                 audit_log.append(event)
                 return True
-            except OSError:
+            except (OSError, ValueError, json.JSONDecodeError):
                 return False
 
         def do_POST(self) -> None:
