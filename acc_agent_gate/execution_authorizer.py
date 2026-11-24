@@ -62,8 +62,9 @@ class ExecutionAuthorizer:
         self.clock = clock or (lambda: datetime.now(timezone.utc))
         self.max_ttl_seconds = max_ttl_seconds
         self.replay_db = str(replay_db)
-        if self.replay_db != ":memory:":
-            Path(self.replay_db).parent.mkdir(parents=True, exist_ok=True)
+        if self.replay_db == ":memory:":
+            raise ValueError("Replay protection requires a durable SQLite file path.")
+        Path(self.replay_db).parent.mkdir(parents=True, exist_ok=True)
         self._initialize_replay_db()
 
     def _now(self) -> datetime:
