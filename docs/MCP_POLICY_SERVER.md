@@ -39,20 +39,24 @@ The Python store is available as `PersistentApprovalStore`:
 - `decide(ticket, reviewer, role, decision, reason)` records an authorized
   human decision.
 
-The MCP server exposes no approval or rejection tool. The durable store is
-currently a service-layer primitive for a future authenticated reviewer
-surface; it does not yet expose a web reviewer UI or HTTP decision endpoint.
+Phase 3 adds the authenticated reviewer HTTP API in
+`acc_agent_gate.reviewer_api`. It derives reviewer identity and role from
+server-side hashed bearer credentials, enforces role-scoped ticket visibility,
+and records APPROVE/REJECT decisions. It remains review-only.
 
 ## Critical execution boundary
 
 **An APPROVED ledger record does not authorize or execute a Campaign send.**
-This phase deliberately does not mint an execution token, call
-`AgentGate.approve`, or invoke the Campaign backend. The existing in-process
-`AgentGate` approval queue remains separate. Phase 3 must connect a
-reviewer-authenticated surface to the policy re-check and execution path using
-a signed, short-lived, single-use authorization bound to the exact payload,
-policy digest and audit fingerprint. Until then, treat this phase as durable
-review evidence only.
+Phase 4 adds a local, HMAC-signed, short-lived, single-use authorization
+evidence service. It revalidates the approval, exact payload and policy
+fingerprints, original audit chain, current delivery state and current QA at
+issuance and consumption. It atomically rejects token replay.
+
+The authorization artifact is evidence only: it does not call
+`AgentGate.approve`, invoke `AgentGate._execute`, or send a Campaign delivery.
+No production Adobe Campaign connector is included; the bundled backend and
+examples remain synthetic. See
+[Phase 4 authorization design](EXECUTION_AUTHORIZATION.md).
 
 No production Adobe Campaign connector is included. The bundled backend and
 examples remain synthetic.
