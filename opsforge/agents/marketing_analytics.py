@@ -145,6 +145,11 @@ class MarketingAnalyticsAgent(BaseAgent):
         if baseline is not None:
             if not isinstance(baseline, list) or not baseline:
                 raise ValueError("baseline_campaigns must be a non-empty list when supplied.")
+            for index, record in enumerate(baseline):
+                if not isinstance(record, dict):
+                    raise ValueError(f"Baseline campaign at index {index} must be a dictionary.")
+                for metric in METRICS:
+                    _number(record.get(metric, 0), metric)
             baseline_totals = _aggregate(baseline)
             baseline_kpis = _performance(baseline_totals)
             deltas = {}
