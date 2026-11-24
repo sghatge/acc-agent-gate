@@ -56,8 +56,9 @@ def request_json(url: str, *, method: str = "GET", payload: dict | None = None,
 def main() -> int:
     origin = os.getenv("OPSFORGE_API_URL", "").strip().rstrip("/")
     token = os.getenv("OPSFORGE_API_TOKEN", "")
-    if not origin.startswith("https://"):
-        print("FAIL: OPSFORGE_API_URL must be an HTTPS origin.")
+    local_http = origin.startswith("http://127.0.0.1") or origin.startswith("http://localhost")
+    if not origin.startswith("https://") and not local_http:
+        print("FAIL: OPSFORGE_API_URL must use HTTPS (HTTP is allowed only for localhost).")
         return 2
     if token and len(token) < 32:
         print("FAIL: OPSFORGE_API_TOKEN must contain at least 32 characters.")
