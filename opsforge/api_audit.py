@@ -6,6 +6,7 @@ content, credentials and model responses are deliberately excluded.
 
 import hashlib
 import json
+import os
 import threading
 from pathlib import Path
 from typing import Any
@@ -41,6 +42,7 @@ class HashChainAuditLog:
             with self.path.open("a", encoding="utf-8") as stream:
                 stream.write(json.dumps(record, sort_keys=True, ensure_ascii=False) + "\n")
                 stream.flush()
+                os.fsync(stream.fileno())
             return record
 
 
