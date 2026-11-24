@@ -40,20 +40,22 @@ Open the local URL printed by Streamlit (normally
 
 ## Free hosting — Streamlit Community Cloud
 
+[![Deploy to Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io/deploy?repository=sghatge%2Facc-agent-gate&branch=main&mainModule=streamlit_app.py)
+
 The recommended zero-cost portfolio deployment is Streamlit Community Cloud.
 It connects directly to GitHub and provides a public `.streamlit.app` URL.
 No Vercel project, paid hosting account, custom server or Gemini API key is
 required for the core demo.
 
-After Phase 5 is merged into `main`:
+The app is ready on `main`. Use the direct [Deploy OPSFORGE to Streamlit Community Cloud](https://share.streamlit.io/deploy?repository=sghatge%2Facc-agent-gate&branch=main&mainModule=streamlit_app.py) link, then:
 
-1. Open [Streamlit Community Cloud](https://share.streamlit.io/) and sign in
-   with GitHub.
-2. Choose **Create app** → **Yup, I have an app**.
-3. Select repository `sghatge/acc-agent-gate`.
-4. Select branch `main`.
-5. Set the app file path to `streamlit_app.py`.
-6. Leave Secrets empty for the standard demo, then deploy.
+1. Sign in to Streamlit Community Cloud with GitHub and authorize access to the public repository.
+2. Confirm repository `sghatge/acc-agent-gate`, branch `main`, and app file `streamlit_app.py`.
+3. In **Advanced settings**, choose Python **3.11** (the project CI and local guide target Python 3.11).
+4. Leave Secrets empty; Gemini is optional and is not needed for the demo.
+5. Click **Deploy** and wait for the app to finish building.
+
+The first deployment requires your Streamlit/GitHub authorization and one click on **Deploy**. I cannot authorize an external account or accept its terms on your behalf. Once it finishes, Streamlit gives you the public `.streamlit.app` URL.
 
 The app uses only fictional campaign data and a generated per-session signing
 secret. Gemini is optional; leave it disabled to keep the deployment at zero
