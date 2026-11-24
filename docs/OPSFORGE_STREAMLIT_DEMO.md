@@ -38,6 +38,34 @@ streamlit run streamlit_app.py
 Open the local URL printed by Streamlit (normally
 `http://localhost:8501`).
 
+## Free hosting — Streamlit Community Cloud
+
+The recommended zero-cost portfolio deployment is Streamlit Community Cloud.
+It connects directly to GitHub and provides a public `.streamlit.app` URL.
+No Vercel project, paid hosting account, custom server or Gemini API key is
+required for the core demo.
+
+After Phase 5 is merged into `main`:
+
+1. Open [Streamlit Community Cloud](https://share.streamlit.io/) and sign in
+   with GitHub.
+2. Choose **Create app** → **Yup, I have an app**.
+3. Select repository `sghatge/acc-agent-gate`.
+4. Select branch `main`.
+5. Set the app file path to `streamlit_app.py`.
+6. Leave Secrets empty for the standard demo, then deploy.
+
+The app uses only fictional campaign data and a generated per-session signing
+secret. Gemini is optional; leave it disabled to keep the deployment at zero
+API cost. Community Cloud redeploys when the connected GitHub branch changes.
+
+**Important hosting limitation:** Community Cloud is a public demo host, not a
+durable database service. This app's SQLite approval/replay files and
+Streamlit session state are demo-scoped and may be lost when the app restarts
+or its runtime is recycled. Do not use it for real approvals, real campaign
+data, production execution or sensitive information. Keep the deployment
+strictly synthetic and portfolio-only.
+
 ## Suggested walkthrough
 
 - Start with `DM_BF26_HR`: QA should pass and the approval threshold is one.
