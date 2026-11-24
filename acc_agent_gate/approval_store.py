@@ -208,6 +208,7 @@ class PersistentApprovalStore:
             "payload_sha256": row["payload_sha256"],
             "policy_sha256": row["policy_sha256"],
             "approvals_required": row["approvals_required"],
+            "allowed_roles": json.loads(row["allowed_roles_json"]),
             "status": row["status"],
             "created_at": row["created_at"],
             "updated_at": row["updated_at"],
