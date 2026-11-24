@@ -360,3 +360,17 @@ A zero denominator returns `null`, not a fabricated zero rate.
 ```bash
 python -m pytest -q tests/test_marketing_analytics_agent.py
 ```
+
+
+## Typed MCP Policy Server
+
+A second, typed MCP entry point now exposes the deterministic gate as
+structured campaign-governance tools:
+
+- `campaign_preflight_check` — deterministic QA with APPROVE/BLOCK evidence.
+- `campaign_request_execution` — queues eligible sends for human approval;
+  it never approves or executes a campaign.
+- `audit_chain_verify` — verifies the hash-chained audit history.
+
+Run it with `python -m acc_agent_gate.policy_server`. See
+[Phase 1 architecture, tool contracts and security boundaries](docs/MCP_POLICY_SERVER.md).
