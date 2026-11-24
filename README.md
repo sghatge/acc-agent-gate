@@ -414,3 +414,22 @@ issuance and consumption and persists consumed JTIs to prevent replay.
 
 This is a synthetic-backend reference implementation only. No production
 Adobe Campaign connector or agent-callable execution tool is provided.
+
+## OPSFORGE Streamlit Governance Control Room
+
+Run the interactive Phase 5 workflow locally:
+
+```bash
+pip install -r requirements.txt
+streamlit run streamlit_app.py
+```
+
+The control room demonstrates campaign QA, the persistent human approval
+ledger, signed single-use execution permits, synthetic send execution and
+audit verification. An optional Gemini explainer can summarize evidence but
+cannot make decisions or execute actions.
+
+- [Streamlit demo setup and walkthrough](docs/OPSFORGE_STREAMLIT_DEMO.md)
+- Synthetic Campaign backend only; no production connector.
+- Local demo only; do not expose the unauthenticated app as a production
+  operator console.
