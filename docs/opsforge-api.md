@@ -16,7 +16,7 @@ python -m opsforge.api
 PowerShell:
 
 ```powershell
-$env:OPSFORGE_API_TOKEN = [Convert]::ToBase64String([byte[]](1..48 | ForEach-Object { Get-Random -Maximum 256 }))
+$env:OPSFORGE_API_TOKEN = python -c "import secrets; print(secrets.token_urlsafe(48))"
 python -m opsforge.api
 ```
 
