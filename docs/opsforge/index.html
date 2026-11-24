@@ -22,6 +22,9 @@ header{display:flex;align-items:center;justify-content:space-between;gap:16px;pa
 [hidden]{display:none!important}
 @media(max-width:900px){.metrics,.agents{grid-template-columns:repeat(2,minmax(0,1fr))}.workspace{grid-template-columns:1fr}.side{display:grid;grid-template-columns:repeat(2,1fr)}.hero{align-items:start;flex-direction:column}}
 @media(max-width:560px){.shell{padding:15px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.metric{padding:12px}.metric strong{font-size:21px}.agents{grid-template-columns:1fr}.two{grid-template-columns:1fr}.header-right{justify-content:flex-end}.hero h1{font-size:31px}}
+
+.delivery{margin:22px 0 28px;padding:20px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(135deg,#121a2d,#172239)}
+.delivery-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}.delivery h2{margin:0 0 5px;font-size:20px}.delivery p{margin:0;color:var(--muted);font-size:13px}.delivery-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:16px}.delivery-item{padding:13px;border:1px solid var(--line);border-radius:12px;background:#0d1526}.delivery-item strong{display:block;font-size:13px;margin-bottom:5px}.delivery-item span{font-size:12px;color:var(--muted)}.delivery-item.done{border-color:#285c4a}.delivery-item.pending{border-color:#66552f}.delivery-foot{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px;font-size:12px}.delivery-foot a{font-weight:700}@media(max-width:850px){.delivery-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:520px){.delivery-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body><div class="shell">
@@ -33,6 +36,27 @@ header{display:flex;align-items:center;justify-content:space-between;gap:16px;pa
 <div class="metric"><label>Decision posture</label><strong>Human-led</strong><span>Recommendations never equal approval</span></div>
 <div class="metric"><label>QA model</label><strong>Deterministic</strong><span>Evidence-based pre-send checks</span></div>
 <div class="metric"><label>Data boundary</label><strong>Synthetic</strong><span>No production connection</span></div>
+</section>
+<section class="delivery" aria-label="OPSFORGE delivery status">
+ <div class="delivery-top">
+  <div><div class="eyebrow">Governance delivery status</div><h2>Core control plane is implemented</h2><p>Phase 1–5 engineering is in the main branch. Remaining items are production-readiness dependencies, not missing demo features.</p></div>
+  <span class="pill demo">Synthetic demo · no live CRM writes</span>
+ </div>
+ <div class="delivery-grid">
+  <div class="delivery-item done"><strong>✓ Policy gate & MCP server</strong><span>Deterministic allow / block / approval decisions</span></div>
+  <div class="delivery-item done"><strong>✓ Durable approval ledger</strong><span>SQLite-backed reviewer evidence</span></div>
+  <div class="delivery-item done"><strong>✓ Authenticated reviewer API</strong><span>Server-derived identity and role checks</span></div>
+  <div class="delivery-item done"><strong>✓ Single-use authorization</strong><span>Signed permit, revalidation and replay protection</span></div>
+  <div class="delivery-item done"><strong>✓ OPSFORGE control room</strong><span>Streamlit governance walkthrough on synthetic data</span></div>
+  <div class="delivery-item pending"><strong>○ Hosted API deployment</strong><span>Render service, persistent disk and protected secrets</span></div>
+  <div class="delivery-item pending"><strong>○ Enterprise identity</strong><span>OIDC / Entra ID, verified users and least-privilege roles</span></div>
+  <div class="delivery-item pending"><strong>○ Central audit & operations</strong><span>Immutable retention, backup, monitoring and edge rate limits</span></div>
+ </div>
+ <div class="delivery-foot">
+  <a href="https://github.com/sghatge/acc-agent-gate">Repository & CI ↗</a>
+  <a href="https://github.com/sghatge/acc-agent-gate/blob/main/docs/opsforge-hosted-deployment.md">Hosted API runbook ↗</a>
+  <a href="https://github.com/sghatge/acc-agent-gate/blob/main/docs/OPSFORGE_STREAMLIT_DEMO.md">Governance demo guide ↗</a>
+ </div>
 </section>
 <div class="section-head"><div><h2>Agent capabilities</h2><p>Choose a specialist to open its task workspace.</p></div><span class="tag">4 modules</span></div>
 <section class="agents">

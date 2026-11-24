@@ -4,6 +4,8 @@
 
 **[▶ Interactive governance demo](https://sghatge.github.io/acc-agent-gate/)** · change the policy and watch an AI agent's Black Friday session re-run live.
 
+**[Governance OS delivery status](docs/OPSFORGE_DELIVERY_STATUS.md)** · see implemented controls and remaining production-readiness work.
+
 **A governance layer between AI agents and Adobe Campaign.**
 
 Adobe's CX Enterprise agentic tools now list Campaign Classic capabilities that include instance discovery, schema browsing, query execution, workflow control and SOAP/JS execution, reached through CX Enterprise Coworker rather than a standalone endpoint [1][2]. That is a big productivity unlock. It also means an eager agent is a few calls away from a full-table `DELETE`, a send without an unsubscribe link, or pausing your GDPR purge.
