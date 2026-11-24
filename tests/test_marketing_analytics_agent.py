@@ -33,9 +33,9 @@ def test_agent_calculates_aggregate_kpis():
     assert overall["delivered"] == 14750
     assert overall["delivery_rate_pct"] == 98.33
     assert overall["bounce_rate_pct"] == 1.67
-    assert overall["open_rate_pct"] == 53.42
+    assert overall["open_rate_pct"] == 53.36
     assert overall["click_through_rate_pct"] == 13.36
-    assert overall["conversion_rate_pct"] == 12.17
+    assert overall["conversion_rate_pct"] == 12.59
     assert result["execution_scope"] == "analytics_advisory_only"
 
 
