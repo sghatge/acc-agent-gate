@@ -43,7 +43,7 @@ class PreflightResponse(BaseModel):
 class ExecutionRequestResponse(BaseModel):
     campaign_id: str
     decision: DecisionLabel
-    submitted: bool
+    approval_requested: bool
     execution_authorized: bool = False
     approval_ticket: str | None = None
     reason: str
@@ -128,7 +128,7 @@ def build_server(gate: AgentGate | None = None) -> FastMCP:
         return ExecutionRequestResponse(
             campaign_id=delivery_id,
             decision=label,
-            submitted=bool(ticket),
+            approval_requested=bool(ticket),
             execution_authorized=False,
             approval_ticket=ticket,
             reason=reason,
