@@ -85,6 +85,14 @@ class ExecutionAuthorizer:
                 )
             """)
 
+    def _assert_unconsumed(self, jti: str) -> None:
+        with sqlite3.connect(self.replay_db) as db:
+            row = db.execute(
+                "SELECT 1 FROM consumed_authorizations WHERE jti=?", (jti,)
+            ).fetchone()
+        if row:
+            raise AuthorizationError("Execution permit has already been consumed.")
+
     def _approval_evidence(self, ticket: str) -> dict[str, Any]:
         item = self.approvals.get_request(ticket)
         if item["status"] != "APPROVED":
@@ -177,6 +185,7 @@ class ExecutionAuthorizer:
         if payload["exp"] - payload["iat"] > self.max_ttl_seconds:
             raise AuthorizationError("Execution permit lifetime exceeds the configured maximum.")
 
+        self._assert_unconsumed(payload["jti"])
         item = self._approval_evidence(payload["ticket"])
         binding = self._revalidate(item)
         for key in ("delivery_id", "payload_sha256", "policy_sha256", "audit_fingerprint", "approvers"):
