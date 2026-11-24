@@ -400,3 +400,12 @@ does not accept client-supplied identities and does not execute campaigns.
 
 An approved ledger record is not execution authorization. Put any remote
 deployment behind HTTPS, rate limiting and managed secrets.
+
+## Single-use authorization evidence — Phase 4
+
+The local authorization service revalidates reviewer evidence, payload and
+policy fingerprints, the audit chain, delivery state and current QA before
+issuing a short-lived HMAC-signed token. Token consumption repeats those
+checks and atomically rejects replay. It returns authorization evidence only;
+it does not execute a Campaign action. See
+[Phase 4 authorization design](docs/EXECUTION_AUTHORIZATION.md).
