@@ -44,7 +44,8 @@ curl -X POST http://127.0.0.1:8765/api/agents/marketing_analytics/run \
   Salesforce, or other production systems.
 - A random bearer token is a minimal single-service credential, not enterprise
   identity management. Use an identity-aware gateway/OIDC provider, short-lived
-  credentials, secret rotation and per-user authorization before team rollout. Treat\n  the optional `X-OPSFORGE-Actor` header as an unverified audit label, not an identity claim.
+  credentials, secret rotation and per-user authorization before team rollout. Treat
+  the optional `X-OPSFORGE-Actor` header as an unverified audit label, not an identity claim.
 - Keep the service on loopback for local use. For remote use, place it behind a
   trusted HTTPS reverse proxy; never expose the development HTTP listener
   directly to the public internet. Apply request-rate limits at the proxy.
