@@ -238,3 +238,52 @@ and must not invent performance figures or claim that actions were executed.
 ```bash
 python -m pytest -q tests/test_crm_operations_agent.py
 ```
+
+
+## OPSFORGE Adobe Campaign QA Agent
+
+The `adobe_campaign_qa` agent runs deterministic pre-send checks using the
+same QA rules as ACC Agent Gate. It checks unsubscribe links, market legal
+footers, price/currency locale, consent filtering, proof sign-off, local quiet
+hours, marketing typology, seed-list presence and subject length.
+
+The input is an explicit delivery evidence object; the agent does not query
+Adobe Campaign or infer missing facts. Blockers produce a `hold`
+recommendation. A clean result is only eligible for human review—it is not
+send approval and does not execute a delivery.
+
+### Example
+
+```python
+from opsforge.agents.adobe_campaign_qa import AdobeCampaignQAAgent
+
+agent = AdobeCampaignQAAgent()
+result = agent.run({
+    "delivery": {
+        "id": "DM_TEST_HR",
+        "internal_name": "DM_TEST_HR",
+        "market": "HR",
+        "label": "Test campaign Croatia",
+        "subject": "Test campaign",
+        "preheader": "A short preheader",
+        "body": "<footer>Legal entity HR ... UnsubscriptionLink ...</footer>",
+        "target_count": 12000,
+        "scheduled_local": "2026-11-24 10:00",
+        "typology": "TY_MARKETING_EU",
+        "proof_sent": True,
+        "seed_list": True,
+        "consent_filter": True,
+    }
+})
+print(result["status"], result["blockers"])
+```
+
+Set `use_gemini=True` to add remediation guidance. Gemini can explain fixes,
+but deterministic check results remain authoritative and cannot be overridden
+by generated text.
+
+### Test
+
+```bash
+python -m pytest -q tests/test_adobe_campaign_qa_agent.py
+```
