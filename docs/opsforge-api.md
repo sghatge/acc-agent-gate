@@ -1,7 +1,12 @@
 ## OPSFORGE authenticated agent API
 
-The unified dashboard is a static showcase. To execute the Python agents over
-HTTP, run the optional local API service:
+The unified dashboard can run locally with synthetic examples or connect to
+this optional Python HTTP service for authenticated execution of the four
+OPSFORGE agents.
+
+### Start the local service
+
+Generate a random bearer token:
 
 ```bash
 export OPSFORGE_API_TOKEN="$(python -c 'import secrets; print(secrets.token_urlsafe(48))')"
@@ -15,19 +20,55 @@ $env:OPSFORGE_API_TOKEN = [Convert]::ToBase64String([byte[]](1..48 | ForEach-Obj
 python -m opsforge.api
 ```
 
-The service listens on `127.0.0.1:8765` by default. It exposes:
+The service listens on `127.0.0.1:8765` by default. The single-token
+compatibility mode assigns the token the `operator` role. Use the multi-user
+credential map below to apply distinct roles.
 
-- `GET /health` — public liveness and agent capability metadata.
+### Role-based access control
+
+For multi-user access, configure `OPSFORGE_API_CREDENTIALS_JSON` as a JSON
+object whose keys are SHA-256 hashes of bearer tokens. Store only token hashes
+on the server; give each user the corresponding raw token through a secure
+secret-delivery channel.
+
+Generate a token and its hash:
+
+```bash
+python -c 'import secrets,hashlib; t=secrets.token_urlsafe(48); print("TOKEN="+t); print("SHA256="+hashlib.sha256(t.encode()).hexdigest())'
+```
+
+Configure the map as a server environment variable (replace the example hash):
+
+```bash
+export OPSFORGE_API_CREDENTIALS_JSON='{"<sha256-token-hash>":{"actor":"crm-analyst-01","role":"analyst"},"<qa-sha256-token-hash>":{"actor":"campaign-qa-01","role":"qa"},"<operator-sha256-token-hash>":{"actor":"ops-lead","role":"operator"}}'
+python -m opsforge.api
+```
+
+| Role | Research | CRM Ops | Adobe Campaign QA | Marketing Analytics | Gemini |
+|---|---:|---:|---:|---:|---:|
+| `analyst` | Yes | Yes | No | Yes | No |
+| `qa` | No | No | Yes | No | No |
+| `operator` | Yes | Yes | Yes | Yes | Yes, if server-enabled |
+| `admin` | Yes | Yes | Yes | Yes | Yes, if server-enabled |
+
+The API derives the audit actor and role from the configured credential.
+Client-supplied actor headers are not trusted. The `analyst` role cannot
+invoke Adobe Campaign QA; the `qa` role cannot invoke analytics or CRM
+operations. Gemini requires both an `operator` or `admin` role and the
+server-side `OPSFORGE_ENABLE_GEMINI=true` switch, plus a configured Gemini
+API key.
+
+### Endpoints
+
+- `GET /health` — public liveness, available agent names and role names.
 - `POST /api/agents/research/run`
 - `POST /api/agents/crm_operations/run`
 - `POST /api/agents/adobe_campaign_qa/run`
 - `POST /api/agents/marketing_analytics/run`
 
-Every execution endpoint requires `Authorization: Bearer <OPSFORGE_API_TOKEN>`
-and a JSON object body. Requests are limited to 64 KiB. Agent names are
-allow-listed; task validation remains in each agent. `use_gemini` is disabled
-unless the server operator explicitly sets `OPSFORGE_ENABLE_GEMINI=true`
-and configures the Gemini API key.
+Every execution endpoint requires `Authorization: Bearer <token>` and a JSON
+object body. Requests are limited to 64 KiB. Agent names are allow-listed;
+task validation remains in each agent.
 
 ### Example request
 
@@ -38,26 +79,40 @@ curl -X POST http://127.0.0.1:8765/api/agents/marketing_analytics/run \
   -d '{"period":"Sample","campaigns":[{"name":"Launch","sends":10000,"delivered":9800,"opens":4900,"clicks":980,"conversions":98,"bounces":200}]}'
 ```
 
+### Dashboard connection
+
+Select **Authenticated Python API** in the OPSFORGE dashboard, enter the API
+origin and bearer token, then run the selected agent. The token remains in page
+memory only and is not written to browser storage. The browser only permits
+HTTPS for remote origins; HTTP is allowed for localhost development.
+
+Set `OPSFORGE_CORS_ORIGINS` to the exact dashboard origin, for example:
+
+```bash
+export OPSFORGE_CORS_ORIGINS="https://sghatge.github.io"
+```
+
 ### Security and deployment notes
 
-- The API is advisory-only and does not connect to or mutate Adobe Campaign,
-  Salesforce, or other production systems.
-- A random bearer token is a minimal single-service credential, not enterprise
-  identity management. Use an identity-aware gateway/OIDC provider, short-lived
-  credentials, secret rotation and per-user authorization before team rollout. Treat
-  the optional `X-OPSFORGE-Actor` header as an unverified audit label, not an identity claim.
+- The API is advisory-only. It does not connect to or mutate Adobe Campaign,
+  Salesforce, or other production systems; it cannot send or approve a delivery.
+- Multi-user mode stores SHA-256 token hashes and configured actor/role labels.
+  It is a basic service-level RBAC layer, not enterprise SSO. For production,
+  integrate OIDC/identity-aware gateway, short-lived credentials, rotation and
+  centralized per-user authorization.
 - Keep the service on loopback for local use. For remote use, place it behind a
   trusted HTTPS reverse proxy; never expose the development HTTP listener
   directly to the public internet. Apply request-rate limits at the proxy.
-- Set `OPSFORGE_CORS_ORIGINS` to a comma-separated exact origin allow-list
-  before browser access. Do not use wildcard origins with bearer credentials.
-  The dashboard exposes an explicit API mode and sends requests only after a user selects it and enters a token.
+- CORS uses an exact origin allow-list. Do not use wildcard origins with bearer
+  credentials.
 - Audit events are hash-chained in `var/opsforge-api-audit.jsonl`. They contain
-  an unverified actor label, agent, request ID, outcome and a task digest—not prompts, source
-  content, credentials or generated reports. Protect and back up the audit file;
-  a local hash chain is tamper-evident, not immutable storage.
-- Failed audit persistence withholds the API response. This is a local
-  fail-closed safeguard, not a replacement for centralized durable audit storage.
+  the credential-configured actor, role, agent, request ID, outcome and a task
+  digest—not prompts, source content, credentials or generated reports.
+  The actor label is verified against the credential configuration, not an
+  external corporate identity provider.
+- Audit-chain corruption or persistence failure withholds the API response.
+  The local hash chain is tamper-evident, not immutable storage; protect and
+  back up the audit file and move to centralized durable storage before rollout.
 
 Verify the audit chain:
 

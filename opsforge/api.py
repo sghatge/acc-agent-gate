@@ -1,9 +1,10 @@
-"""Authenticated HTTP API for OPSFORGE specialist agents.
+"""Role-aware authenticated HTTP API for OPSFORGE specialist agents.
 
-Run with: OPSFORGE_API_TOKEN=<long-random-secret> python -m opsforge.api
+Run locally with OPSFORGE_API_TOKEN=<long-random-secret> python -m opsforge.api.
+For multiple users, configure OPSFORGE_API_CREDENTIALS_JSON with SHA-256 token
+hashes mapped to named roles; see docs/opsforge-api.md.
 
-This service is an advisory execution API. It does not connect to or mutate
-Adobe Campaign, Salesforce, or other production systems.
+The service is advisory-only and never connects to or mutates production CRM.
 """
 
 import hashlib
@@ -32,6 +33,76 @@ AGENT_NAMES = {
     "adobe_campaign_qa",
     "marketing_analytics",
 }
+ROLE_PERMISSIONS = {
+    "analyst": frozenset({"research", "crm_operations", "marketing_analytics"}),
+    "qa": frozenset({"adobe_campaign_qa"}),
+    "operator": frozenset(AGENT_NAMES),
+    "admin": frozenset(AGENT_NAMES),
+}
+GEMINI_ROLES = frozenset({"operator", "admin"})
+_ACTOR_RE = re.compile(r"[A-Za-z0-9_.@ -]{1,64}")
+_HASH_RE = re.compile(r"[a-f0-9]{64}")
+
+
+def token_sha256(token: str) -> str:
+    """Return the SHA-256 hex digest used as a credential-map key."""
+    if not isinstance(token, str) or len(token) < 32:
+        raise ValueError("API tokens must contain at least 32 characters.")
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def _validate_credentials(
+    credentials: dict[str, dict[str, str]],
+) -> dict[str, dict[str, str]]:
+    if not isinstance(credentials, dict) or not credentials:
+        raise RuntimeError("At least one OPSFORGE API credential must be configured.")
+    validated: dict[str, dict[str, str]] = {}
+    for digest, principal in credentials.items():
+        if not isinstance(digest, str) or not _HASH_RE.fullmatch(digest):
+            raise ValueError("Credential keys must be lowercase SHA-256 token hashes.")
+        if not isinstance(principal, dict):
+            raise ValueError("Each credential principal must be an object.")
+        actor = principal.get("actor")
+        role = principal.get("role")
+        if not isinstance(actor, str) or not _ACTOR_RE.fullmatch(actor):
+            raise ValueError("Credential actor must be 1-64 safe characters.")
+        if not isinstance(role, str) or role not in ROLE_PERMISSIONS:
+            raise ValueError(f"Unsupported OPSFORGE role: {role}")
+        validated[digest] = {"actor": actor, "role": role}
+    return validated
+
+
+def load_credentials(
+    *,
+    token: str | None = None,
+    credential_hashes: dict[str, dict[str, str]] | None = None,
+) -> dict[str, dict[str, str]]:
+    """Load hashed multi-user credentials or a single operator token fallback."""
+    if credential_hashes is not None:
+        return _validate_credentials(credential_hashes)
+
+    configured = os.getenv("OPSFORGE_API_CREDENTIALS_JSON")
+    if configured:
+        try:
+            parsed = json.loads(configured)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError("OPSFORGE_API_CREDENTIALS_JSON must be valid JSON.") from exc
+        return _validate_credentials(parsed)
+
+    api_token = token if token is not None else os.getenv("OPSFORGE_API_TOKEN")
+    if not isinstance(api_token, str) or len(api_token) < 32:
+        raise RuntimeError(
+            "Set OPSFORGE_API_CREDENTIALS_JSON or OPSFORGE_API_TOKEN "
+            "(minimum 32 characters)."
+        )
+    # Backward-compatible local single-credential mode. It has operator rights;
+    # configure credential hashes for named per-user roles.
+    return {
+        token_sha256(api_token): {
+            "actor": "local-operator",
+            "role": "operator",
+        }
+    }
 
 
 def build_orchestrator() -> Orchestrator:
@@ -52,18 +123,14 @@ def create_server(
     port: int = 8765,
     *,
     token: str | None = None,
+    credential_hashes: dict[str, dict[str, str]] | None = None,
     audit_path: str | None = None,
     enable_gemini: bool | None = None,
     allowed_origins: set[str] | None = None,
     orchestrator: Orchestrator | None = None,
 ) -> ThreadingHTTPServer:
-    """Create a configured server; token is mandatory for all agent execution."""
-    api_token = token if token is not None else os.getenv("OPSFORGE_API_TOKEN")
-    if not isinstance(api_token, str) or len(api_token) < 32:
-        raise RuntimeError(
-            "Set OPSFORGE_API_TOKEN to a random secret of at least 32 characters."
-        )
-
+    """Create the role-aware API; every execution route requires a bearer token."""
+    credentials = load_credentials(token=token, credential_hashes=credential_hashes)
     gemini_enabled = (
         enable_gemini
         if enable_gemini is not None
@@ -98,7 +165,7 @@ def create_server(
                 return {
                     "Access-Control-Allow-Origin": origin,
                     "Vary": "Origin",
-                    "Access-Control-Allow-Headers": "Authorization, Content-Type, X-OPSFORGE-Actor",
+                    "Access-Control-Allow-Headers": "Authorization, Content-Type",
                     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
                 }
             return {}
@@ -131,24 +198,29 @@ def create_server(
                         "service": "opsforge-api",
                         "status": "healthy",
                         "agents": sorted(AGENT_NAMES),
+                        "roles": sorted(ROLE_PERMISSIONS),
                         "execution_scope": "advisory_only",
                     },
                 )
                 return
             self._send(HTTPStatus.NOT_FOUND, {"error": "not_found"})
 
-        def _authenticated(self) -> bool:
+        def _principal(self) -> dict[str, str] | None:
             supplied = self.headers.get("Authorization", "")
             if not supplied.startswith("Bearer "):
-                return False
+                return None
             candidate = supplied[7:]
-            return hmac.compare_digest(candidate, api_token)
+            digest = hashlib.sha256(candidate.encode("utf-8")).hexdigest()
+            for known_digest, principal in credentials.items():
+                if hmac.compare_digest(digest, known_digest):
+                    return principal
+            return None
 
         def _audit(
             self,
             *,
             request_id: str,
-            actor: str,
+            principal: dict[str, str],
             agent: str,
             status: int,
             outcome: str,
@@ -156,8 +228,9 @@ def create_server(
         ) -> bool:
             event = {
                 "request_id": request_id,
-                "actor_label": actor,
-                "actor_label_verified": False,
+                "actor": principal["actor"],
+                "actor_verified": True,
+                "role": principal["role"],
                 "agent": agent,
                 "http_status": status,
                 "outcome": outcome,
@@ -169,6 +242,39 @@ def create_server(
             except (OSError, ValueError, json.JSONDecodeError):
                 return False
 
+        def _audited_denial(
+            self,
+            *,
+            request_id: str,
+            principal: dict[str, str],
+            agent: str,
+            task_bytes: bytes,
+            status: int,
+            error: str,
+            message: str,
+        ) -> None:
+            if not self._audit(
+                request_id=request_id,
+                principal=principal,
+                agent=agent,
+                status=int(status),
+                outcome="permission_denied" if status == HTTPStatus.FORBIDDEN else "blocked",
+                task_bytes=task_bytes,
+            ):
+                self._send(
+                    HTTPStatus.SERVICE_UNAVAILABLE,
+                    {
+                        "error": "audit_unavailable",
+                        "message": "Denial event could not be persisted.",
+                        "request_id": request_id,
+                    },
+                )
+                return
+            self._send(
+                status,
+                {"error": error, "message": message, "request_id": request_id},
+            )
+
         def do_POST(self) -> None:
             path = urlparse(self.path).path
             match = re.fullmatch(r"/api/agents/([a-z_]+)/run", path)
@@ -177,7 +283,8 @@ def create_server(
                 return
 
             request_id = str(uuid.uuid4())
-            if not self._authenticated():
+            principal = self._principal()
+            if principal is None:
                 self._send(
                     HTTPStatus.UNAUTHORIZED,
                     {"error": "unauthorized", "request_id": request_id},
@@ -228,6 +335,18 @@ def create_server(
                 )
                 return
 
+            if agent_name not in ROLE_PERMISSIONS[principal["role"]]:
+                self._audited_denial(
+                    request_id=request_id,
+                    principal=principal,
+                    agent=agent_name,
+                    task_bytes=task_bytes,
+                    status=HTTPStatus.FORBIDDEN,
+                    error="role_not_authorized",
+                    message=f"Role '{principal['role']}' cannot execute agent '{agent_name}'.",
+                )
+                return
+
             use_gemini = task.get("use_gemini", False)
             if not isinstance(use_gemini, bool):
                 self._send(
@@ -235,27 +354,35 @@ def create_server(
                     {"error": "use_gemini_must_be_boolean", "request_id": request_id},
                 )
                 return
-            if use_gemini and not gemini_enabled:
-                self._send(
-                    HTTPStatus.FORBIDDEN,
-                    {
-                        "error": "gemini_execution_disabled",
-                        "message": "Set OPSFORGE_ENABLE_GEMINI=true on the server to enable model execution.",
-                        "request_id": request_id,
-                    },
+            if use_gemini and principal["role"] not in GEMINI_ROLES:
+                self._audited_denial(
+                    request_id=request_id,
+                    principal=principal,
+                    agent=agent_name,
+                    task_bytes=task_bytes,
+                    status=HTTPStatus.FORBIDDEN,
+                    error="gemini_role_not_authorized",
+                    message="Gemini execution requires operator or admin role.",
                 )
                 return
-
-            actor = self.headers.get("X-OPSFORGE-Actor", "authenticated-user")
-            actor = actor.strip()[:64]
-            if not re.fullmatch(r"[A-Za-z0-9_.@ -]{1,64}", actor):
-                actor = "authenticated-user"
+            if use_gemini and not gemini_enabled:
+                self._audited_denial(
+                    request_id=request_id,
+                    principal=principal,
+                    agent=agent_name,
+                    task_bytes=task_bytes,
+                    status=HTTPStatus.FORBIDDEN,
+                    error="gemini_execution_disabled",
+                    message="Set OPSFORGE_ENABLE_GEMINI=true on the server to enable model execution.",
+                )
+                return
 
             try:
                 result = agent_orchestrator.execute(agent_name, task)
                 response = {
                     **result,
                     "request_id": request_id,
+                    "authorization": {"role": principal["role"]},
                     "execution_scope": "advisory_only",
                 }
                 status = HTTPStatus.OK
@@ -280,7 +407,7 @@ def create_server(
 
             if not self._audit(
                 request_id=request_id,
-                actor=actor,
+                principal=principal,
                 agent=agent_name,
                 status=int(status),
                 outcome=outcome,

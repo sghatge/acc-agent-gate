@@ -104,7 +104,7 @@ async function callApi(task){
  const endpoint=base+"/api/agents/"+routes[active]+"/run";
  document.getElementById("run-status").textContent="Calling authenticated API…";
  try{
-   const response=await fetch(endpoint,{method:"POST",headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json","X-OPSFORGE-Actor":"dashboard-user"},body:JSON.stringify(task),cache:"no-store"});
+   const response=await fetch(endpoint,{method:"POST",headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify(task),cache:"no-store"});
    const body=await response.json();
    document.getElementById("run-status").textContent=response.ok?"API execution complete":"API returned HTTP "+response.status;
    if(!response.ok)return {status:"api_error",http_status:response.status,...body};

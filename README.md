@@ -49,7 +49,7 @@ pip install -r requirements.txt
 python scenarios/black_friday_session.py      # writes out/scenario.json + out/audit.jsonl
 python -m acc_agent_gate.cli show out/audit.jsonl
 python -m acc_agent_gate.cli verify out/audit.jsonl
-python -m pytest -q                           # 24 tests
+python -m pytest -q                           # complete test suite
 ```
 
 ### Run it as an MCP server
@@ -128,7 +128,7 @@ MIT licensed · Built by Sangram Ghatge
 
 ## OPSFORGE API service
 
-The four OPSFORGE agents can be invoked through an optional bearer-authenticated HTTP API. The unified dashboard includes an explicit API mode for connecting to a self-hosted service. See [API setup, security and endpoint documentation](docs/opsforge-api.md).
+The four OPSFORGE agents can be invoked through an optional bearer-authenticated HTTP API with role-based permissions for analysts, QA specialists, operators and admins. The unified dashboard includes an explicit API mode for connecting to a self-hosted service. See [API setup, RBAC, security and endpoint documentation](docs/opsforge-api.md).
 
 ## OPSFORGE Gemini provider
 
