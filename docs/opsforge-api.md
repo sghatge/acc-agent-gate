@@ -11,7 +11,7 @@ python -m opsforge.api
 PowerShell:
 
 ```powershell
-$env:OPSFORGE_API_TOKEN = [Convert]::ToBase64String((1..48 | ForEach-Object { Get-Random -Maximum 256 }))
+$env:OPSFORGE_API_TOKEN = [Convert]::ToBase64String([byte[]](1..48 | ForEach-Object { Get-Random -Maximum 256 }))
 python -m opsforge.api
 ```
 
@@ -47,7 +47,7 @@ curl -X POST http://127.0.0.1:8765/api/agents/marketing_analytics/run \
   credentials, secret rotation and per-user authorization before team rollout.
 - Keep the service on loopback for local use. For remote use, place it behind a
   trusted HTTPS reverse proxy; never expose the development HTTP listener
-  directly to the public internet.
+  directly to the public internet. Apply request-rate limits at the proxy.
 - Set `OPSFORGE_CORS_ORIGINS` to a comma-separated exact origin allow-list
   before browser access. Do not use wildcard origins with bearer credentials.
   The GitHub Pages UI does not call this API automatically.
