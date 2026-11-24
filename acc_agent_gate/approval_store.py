@@ -9,6 +9,7 @@ import hashlib
 import json
 import sqlite3
 import uuid
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -41,12 +42,16 @@ class PersistentApprovalStore:
             Path(self.path).parent.mkdir(parents=True, exist_ok=True)
         self._initialize()
 
+    @contextmanager
     def _connect(self):
         db = sqlite3.connect(self.path, timeout=10, isolation_level=None)
-        db.row_factory = sqlite3.Row
-        db.execute("PRAGMA foreign_keys = ON")
-        db.execute("PRAGMA busy_timeout = 10000")
-        return db
+        try:
+            db.row_factory = sqlite3.Row
+            db.execute("PRAGMA foreign_keys = ON")
+            db.execute("PRAGMA busy_timeout = 10000")
+            yield db
+        finally:
+            db.close()
 
     def _initialize(self):
         with self._connect() as db:
