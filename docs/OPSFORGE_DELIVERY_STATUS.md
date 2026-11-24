@@ -20,7 +20,7 @@ Last verified: 24 November 2026.
 
 | Work item | Status | Dependency / exit criterion |
 |---|---|---|
-| Deploy authenticated API | Pending | Create Render service from `render.yaml`, confirm HTTPS health, attach durable disk, protect generated token |
+| Deploy authenticated API | Optional / externally blocked | Render Blueprint is ready, but persistent disk requires a paid plan. Use the free local Docker setup for now; only deploy remotely when a no-cost option meets persistence and security requirements |
 | Enterprise SSO | Pending | OIDC / Microsoft Entra ID gateway; verified identity mapped to least-privilege roles |
 | Centralized audit retention | Pending | Immutable or append-only central sink, backup/restore test, retention controls |
 | Edge protection | Pending | Rate limiting, TLS, request limits, monitoring and alerting |
@@ -38,5 +38,6 @@ configured by this repository status update.
 
 - [OPSFORGE Unified Agent Workspace](https://sghatge.github.io/acc-agent-gate/opsforge/)
 - [Interactive governance demo](https://sghatge.github.io/acc-agent-gate/)
+- [Free local API setup](OPSFORGE_FREE_LOCAL_SETUP.md)
 - [Hosted API deployment runbook](opsforge-hosted-deployment.md)
 - [Streamlit Governance Control Room guide](OPSFORGE_STREAMLIT_DEMO.md)
