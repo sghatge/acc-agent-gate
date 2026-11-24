@@ -384,3 +384,19 @@ Available tools:
 
 Run it with `python -m acc_agent_gate.policy_server`. See
 [Phase 1 architecture, tool contracts and security boundaries](docs/MCP_POLICY_SERVER.md).
+
+
+## Authenticated Human Reviewer API
+
+A separate review-only HTTP service lets authorized human reviewers inspect
+role-eligible tickets and record APPROVE/REJECT decisions. Reviewer identity
+and role are derived from server-side hashed bearer credentials; the service
+does not accept client-supplied identities and does not execute campaigns.
+
+- Start: `python -m acc_agent_gate.reviewer_api`
+- Configure: `ACC_GATE_REVIEWER_CREDENTIALS_JSON` and
+  `ACC_GATE_APPROVAL_DB`
+- API setup and security boundary: [Reviewer API documentation](docs/REVIEWER_API.md)
+
+An approved ledger record is not execution authorization. Put any remote
+deployment behind HTTPS, rate limiting and managed secrets.
