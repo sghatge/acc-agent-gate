@@ -1,11 +1,8 @@
 """Typed MCP facade for ACC Agent Gate.
 
-The deterministic AgentGate remains the decision authority. This module only
-exposes safe, structured MCP tools; it does not add an agent-controlled
-approval or execution bypass.
-
-Run with:
-    python -m acc_agent_gate.policy_server
+The deterministic AgentGate remains the decision authority. Human review
+decisions are written to a durable ledger; this MCP surface never approves
+requests or executes Campaign actions.
 """
 from __future__ import annotations
 
@@ -15,6 +12,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 from mcp.server.fastmcp import FastMCP
 
+from .approval_store import PersistentApprovalStore
 from .audit import AuditLog
 from .gate import AgentGate, load_policy
 
@@ -58,11 +56,17 @@ class AuditVerificationResponse(BaseModel):
     head: str
 
 
-def build_server(gate: AgentGate | None = None) -> FastMCP:
-    """Build a server around an injectable gate (useful for tests)."""
+def build_server(
+    gate: AgentGate | None = None,
+    approval_store: PersistentApprovalStore | None = None,
+) -> FastMCP:
+    """Build a server around injectable gate and approval store (useful for tests)."""
     active_gate = gate or AgentGate(
         policy=load_policy(os.environ.get("ACC_GATE_POLICY")),
         audit=AuditLog(os.environ.get("ACC_GATE_AUDIT", "audit.jsonl")),
+    )
+    active_store = approval_store or PersistentApprovalStore(
+        os.environ.get("ACC_GATE_APPROVAL_DB", "approval_queue.sqlite3")
     )
     server = FastMCP("acc-agent-gate-policy")
 
@@ -103,7 +107,7 @@ def build_server(gate: AgentGate | None = None) -> FastMCP:
 
     @server.tool()
     def campaign_request_execution(delivery_id: str) -> ExecutionRequestResponse:
-        """Request a governed send. A passing request is queued for human approval; this tool never approves or sends."""
+        """Request a governed send. Eligible requests enter a durable human-review ledger; this tool never approves or sends."""
         outcome = active_gate.call(
             "delivery.send", {"delivery_id": delivery_id}, agent="mcp-policy-client"
         )
@@ -118,7 +122,30 @@ def build_server(gate: AgentGate | None = None) -> FastMCP:
         elif policy_decision == "needs_approval":
             label = "PENDING_HUMAN_APPROVAL"
             reason = outcome["decision"]["reason"]
-            ticket = result.get("ticket")
+            delivery = active_gate.backend.get_delivery(delivery_id)
+            cfg = active_gate.policy.get("tools", {}).get("delivery.send", {})
+            required_roles = cfg.get("approver_roles", [])
+            if not required_roles:
+                # Do not create an approval path without explicitly configured reviewer roles.
+                label = "BLOCK"
+                reason = "No authorized reviewer roles are configured; request failed closed."
+                ticket = None
+            else:
+                request = active_store.create_request(
+                    source_ticket=result["ticket"],
+                    campaign_id=delivery_id,
+                    requester="mcp-policy-client",
+                    payload={
+                        "delivery_id": delivery_id,
+                        "market": delivery.market,
+                        "target_count": delivery.target_count,
+                        "audit_fingerprint": audit_entry["hash"],
+                    },
+                    policy=active_gate.policy,
+                    approvals_required=outcome["decision"]["approvals_required"],
+                    allowed_roles=required_roles,
+                )
+                ticket = request["ticket"]
         else:
             # Defensive: this endpoint must never silently execute a send.
             label = "BLOCK"
@@ -147,8 +174,9 @@ def build_server(gate: AgentGate | None = None) -> FastMCP:
             head=result.get("head", ""),
         )
 
-    # Expose the gate for local integration tests; it is not an MCP tool.
+    # Expose dependencies for local integration tests; neither is an MCP tool.
     server._acc_agent_gate = active_gate  # type: ignore[attr-defined]
+    server._acc_approval_store = active_store  # type: ignore[attr-defined]
     return server
 
 
