@@ -93,7 +93,7 @@ def build_server(gate: AgentGate | None = None) -> FastMCP:
                 if not blocked else "Mandatory QA blocker(s) found; execution must remain blocked."
             ),
             execution_authorized=False,
-            checks_passed=[item.id for item in qa["checks"] if item["passed"]],
+            checks_passed=[item["id"] for item in qa["checks"] if item["passed"]],
             checks_failed=list(qa["blockers"]),
             warnings=list(qa["warnings"]),
             checks=checks,
