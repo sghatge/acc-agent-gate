@@ -111,8 +111,13 @@ class ExecutionAuthorizer:
         return item
 
     def _revalidate(self, item: dict[str, Any]) -> dict[str, Any]:
+        if _canonical_sha256(item["payload"]) != item["payload_sha256"]:
+            raise AuthorizationError("Approval payload integrity check failed.")
         if _canonical_sha256(self.gate.policy) != item["policy_sha256"]:
             raise AuthorizationError("Policy changed after approval; request a new review.")
+        configured_roles = self.gate.policy.get("tools", {}).get("delivery.send", {}).get("approver_roles", [])
+        if sorted(set(configured_roles)) != sorted(set(item["allowed_roles"])):
+            raise AuthorizationError("Current reviewer roles differ from the approved role snapshot.")
         integrity = AuditLog.verify(self.gate.audit.entries)
         if not integrity["valid"]:
             raise AuthorizationError("Audit chain integrity check failed.")
