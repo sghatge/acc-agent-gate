@@ -82,8 +82,6 @@ class MarketingAnalyticsAgent(BaseAgent):
                 raise ValueError(f"Campaign '{name}' has opens greater than delivered.")
             if record["clicks"] > record["delivered"]:
                 raise ValueError(f"Campaign '{name}' has clicks greater than delivered.")
-            if record["conversions"] > record["clicks"]:
-                raise ValueError(f"Campaign '{name}' has conversions greater than clicks.")
             if record["bounces"] > record["sends"]:
                 raise ValueError(f"Campaign '{name}' has bounces greater than sends.")
             normalised.append(record)
