@@ -116,3 +116,15 @@ def test_permit_lifetime_is_bounded(tmp_path):
     _, _, ticket, authorizer = setup_flow(tmp_path)
     with pytest.raises(AuthorizationError, match="lifetime"):
         authorizer.issue(ticket, ttl_seconds=301)
+
+
+def test_modified_approval_payload_snapshot_is_rejected(tmp_path):
+    gate, store, ticket, authorizer = setup_flow(tmp_path)
+    with store._connect() as db:
+        db.execute(
+            "UPDATE approval_requests SET payload_json=? WHERE ticket=?",
+            ('{"delivery_id":"DM_BF26_HR","market":"HR","target_count":1,"audit_fingerprint":"forged"}', ticket),
+        )
+    with pytest.raises(AuthorizationError, match="payload integrity"):
+        authorizer.issue(ticket)
+    assert gate.backend.sent_log == []
