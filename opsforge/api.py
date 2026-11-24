@@ -430,7 +430,7 @@ def create_server(
 
 def main() -> None:
     host = os.getenv("OPSFORGE_API_HOST", "127.0.0.1")
-    port = int(os.getenv("OPSFORGE_API_PORT", "8765"))
+    port = int(os.getenv("OPSFORGE_API_PORT", os.getenv("PORT", "8765")))
     server = create_server(host, port)
     print(f"OPSFORGE API listening on http://{host}:{port}")
     print("Execution requires bearer authentication; HTTPS should terminate at a trusted proxy.")
