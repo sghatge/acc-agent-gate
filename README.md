@@ -49,7 +49,7 @@ pip install -r requirements.txt
 python scenarios/black_friday_session.py      # writes out/scenario.json + out/audit.jsonl
 python -m acc_agent_gate.cli show out/audit.jsonl
 python -m acc_agent_gate.cli verify out/audit.jsonl
-python -m pytest -q                           # 24 tests
+python -m pytest -q                           # complete test suite
 ```
 
 ### Run it as an MCP server
