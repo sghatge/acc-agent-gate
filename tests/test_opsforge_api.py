@@ -4,7 +4,7 @@ import threading
 
 import pytest
 
-from opsforge.api import create_server
+from opsforge.api import create_server, token_sha256
 from opsforge.api_audit import verify_audit_log
 
 
@@ -16,7 +16,7 @@ def api_server(tmp_path):
     server = create_server(
         "127.0.0.1",
         0,
-        token=TOKEN,
+        credential_hashes={token_sha256(TOKEN): {"actor": "test-operator", "role": "operator"}},
         audit_path=str(tmp_path / "audit.jsonl"),
         allowed_origins={"https://sghatge.github.io"},
     )
@@ -83,8 +83,10 @@ def test_marketing_analytics_executes_and_writes_metadata_audit(api_server):
 
     audit_path = api_server[2]
     audit_text = audit_path.read_text(encoding="utf-8")
-    assert "qa-tester" in audit_text
-    assert "actor_label_verified" in audit_text
+    assert "test-operator" in audit_text
+    assert "qa-tester" not in audit_text
+    assert "actor_verified" in audit_text
+    assert "operator" in audit_text
     assert "Launch" not in audit_text
     assert verify_audit_log(audit_path)["valid"] is True
 
@@ -246,3 +248,124 @@ def test_adobe_campaign_qa_route_returns_human_review_not_send_approval(api_serv
     assert body["result"]["blockers"] == []
     assert body["result"]["send_recommendation"] == "eligible_for_human_review"
     assert body["execution_scope"] == "advisory_only"
+
+
+
+def _start_role_server(tmp_path, credentials, enable_gemini=False):
+    server = create_server(
+        "127.0.0.1",
+        0,
+        credential_hashes=credentials,
+        audit_path=str(tmp_path / "role-audit.jsonl"),
+        enable_gemini=enable_gemini,
+    )
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    host, port = server.server_address
+    return server, thread, (host, port, tmp_path / "role-audit.jsonl")
+
+
+def test_analyst_role_can_run_analytics_but_not_campaign_qa(tmp_path):
+    analyst_token = "analyst-token-that-is-long-enough-for-tests"
+    credentials = {
+        token_sha256(analyst_token): {"actor": "crm-analyst-01", "role": "analyst"}
+    }
+    server, thread, api = _start_role_server(tmp_path, credentials)
+    try:
+        allowed_status, allowed_body, _ = request(
+            api,
+            "POST",
+            "/api/agents/marketing_analytics/run",
+            {"campaigns": [{"name": "Email", "sends": 100, "delivered": 99}]},
+            token=analyst_token,
+        )
+        assert allowed_status == 200
+        assert allowed_body["authorization"]["role"] == "analyst"
+
+        denied_status, denied_body, _ = request(
+            api,
+            "POST",
+            "/api/agents/adobe_campaign_qa/run",
+            {"delivery": {}},
+            token=analyst_token,
+        )
+        assert denied_status == 403
+        assert denied_body["error"] == "role_not_authorized"
+        audit = api[2].read_text(encoding="utf-8")
+        assert "crm-analyst-01" in audit
+        assert "permission_denied" in audit
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+
+def test_qa_role_is_limited_to_adobe_campaign_qa(tmp_path):
+    qa_token = "qa-specialist-token-long-enough-for-tests"
+    credentials = {
+        token_sha256(qa_token): {"actor": "campaign-qa-02", "role": "qa"}
+    }
+    server, thread, api = _start_role_server(tmp_path, credentials)
+    try:
+        allowed_status, allowed_body, _ = request(
+            api,
+            "POST",
+            "/api/agents/adobe_campaign_qa/run",
+            {"delivery": {
+                "id": "QA", "internal_name": "QA", "market": "HR",
+                "label": "QA sample", "subject": "Sample subject",
+                "preheader": "Preheader",
+                "body": "<p>1.234,00 €</p><footer>Legal entity HR</footer><a>UnsubscriptionLink</a>",
+                "target_count": 10, "scheduled_local": "2026-12-01 10:00",
+                "typology": "TY_MARKETING_EU", "proof_sent": True,
+                "seed_list": True, "consent_filter": True,
+            }},
+            token=qa_token,
+        )
+        assert allowed_status == 200
+        assert allowed_body["authorization"]["role"] == "qa"
+
+        denied_status, denied_body, _ = request(
+            api,
+            "POST",
+            "/api/agents/marketing_analytics/run",
+            {"campaigns": [{"name": "Email", "sends": 1, "delivered": 1}]},
+            token=qa_token,
+        )
+        assert denied_status == 403
+        assert denied_body["error"] == "role_not_authorized"
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+
+def test_analyst_cannot_request_gemini_even_when_server_enables_it(tmp_path):
+    analyst_token = "analyst-gemini-token-long-enough-for-tests"
+    credentials = {
+        token_sha256(analyst_token): {"actor": "analyst-03", "role": "analyst"}
+    }
+    server, thread, api = _start_role_server(tmp_path, credentials, enable_gemini=True)
+    try:
+        status, body, _ = request(
+            api,
+            "POST",
+            "/api/agents/research/run",
+            {"question": "Research", "sources": ["reference"], "use_gemini": True},
+            token=analyst_token,
+        )
+        assert status == 403
+        assert body["error"] == "gemini_role_not_authorized"
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+
+def test_invalid_role_credential_configuration_is_rejected():
+    with pytest.raises(ValueError, match="Unsupported OPSFORGE role"):
+        create_server(
+            credential_hashes={
+                "a" * 64: {"actor": "unknown-role-user", "role": "superuser"}
+            }
+        )
