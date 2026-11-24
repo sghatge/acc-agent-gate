@@ -287,3 +287,70 @@ by generated text.
 ```bash
 python -m pytest -q tests/test_adobe_campaign_qa_agent.py
 ```
+
+
+## OPSFORGE Marketing Analytics Agent
+
+The `marketing_analytics` agent calculates campaign-level and aggregate
+CRM performance from supplied metrics. It reports delivery rate, bounce
+rate, open rate, click-through rate, click-to-open rate, conversion rate,
+revenue per 1,000 sends, CTR rankings and configurable bounce-rate alerts.
+
+### Input contract
+
+Provide one record per campaign with a unique `name` and numeric metrics:
+`sends`, `delivered`, `opens`, `clicks`, `conversions`, `bounces`,
+and optional `revenue`. Missing metrics default to zero. Counts must be
+non-negative and internally consistent. Open and click counts are treated
+as unique counts for rate calculations. Revenue uses the currency unit
+supplied by the caller; currency conversion is not performed.
+
+### Example
+
+```python
+from opsforge.agents.marketing_analytics import MarketingAnalyticsAgent
+
+agent = MarketingAnalyticsAgent()
+result = agent.run({
+    "period": "Jan-Aug 2026",
+    "bounce_rate_threshold_pct": 1.5,
+    "campaigns": [
+        {
+            "name": "Flagship launch",
+            "sends": 10000,
+            "delivered": 9800,
+            "opens": 4900,
+            "clicks": 980,
+            "conversions": 98,
+            "bounces": 200,
+            "revenue": 250000,
+        }
+    ],
+})
+print(result["overall"])
+print(result["insights"])
+```
+
+Optionally provide `baseline_campaigns` to calculate absolute KPI deltas
+against a comparison period. Rate deltas are percentage-point changes;
+volume and revenue deltas are raw differences. Set `use_gemini=True` for
+a narrative interpretation. Deterministic calculations remain authoritative;
+Gemini must not invent metrics or causal explanations.
+
+### Metric definitions
+
+- Delivery rate = delivered / sends × 100
+- Bounce rate = bounces / sends × 100
+- Open rate = unique opens / delivered × 100
+- Click-through rate = unique clicks / delivered × 100
+- Click-to-open rate = unique clicks / unique opens × 100
+- Conversion rate = conversions / clicks × 100
+- Revenue per 1,000 sends = revenue / sends × 1,000
+
+A zero denominator returns `null`, not a fabricated zero rate.
+
+### Test
+
+```bash
+python -m pytest -q tests/test_marketing_analytics_agent.py
+```
