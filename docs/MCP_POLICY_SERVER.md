@@ -1,90 +1,64 @@
-# MCP Policy Server — Phase 1
+# MCP Policy Server — Phase 2 approval ledger
 
-A typed MCP interface over the existing ACC Agent Gate. The existing
-`AgentGate`, policy-as-code, pre-send QA, approval queue and hash-chained
-audit ledger remain the source of truth.
+Phase 2 adds a durable SQLite-backed human approval ledger to the typed MCP
+facade. The deterministic `AgentGate` remains the policy decision authority.
 
-## Decision boundary
+## Approval lifecycle
 
-- `campaign_preflight_check` returns `APPROVE` only when deterministic QA
-  has no blocking failures. APPROVE means **eligible for human review**, not
-  permission to send.
-- `campaign_request_execution` submits a send request to the existing gate.
-  A clean request returns `PENDING_HUMAN_APPROVAL` with a ticket. A failed
-  request returns `BLOCK`.
-- `audit_chain_verify` verifies the current in-memory audit chain.
-
-Human approvals are deliberately not exposed as MCP tools. The MCP client
-cannot approve its own request, and this facade never executes a delivery.
-The ticket is held in the existing in-process queue for this Phase 1
-integration; a separate human approval surface is not yet connected to this
-MCP process. Persistent queue and authenticated reviewer integration are
-follow-on work. The existing gate re-checks policy when its approval method
-is invoked.
-
-## Run locally
-
-```bash
-pip install -r requirements.txt
-python -m acc_agent_gate.policy_server
-```
-
-The server uses the MCP SDK's stdio transport by default. Point an MCP client
-at the repository's Python environment:
-
-```json
-{
-  "mcpServers": {
-    "acc-agent-gate-policy": {
-      "command": "python",
-      "args": ["-m", "acc_agent_gate.policy_server"],
-      "env": {
-        "ACC_GATE_POLICY": "policy/default.yaml",
-        "ACC_GATE_AUDIT": "audit.jsonl"
-      }
-    }
-  }
-}
-```
-
-## Structured tool outputs
-
-| Tool | Purpose | Important output |
-|---|---|---|
-| `campaign_preflight_check` | Run deterministic pre-send QA | APPROVE/BLOCK, individual checks, audit fingerprint |
-| `campaign_request_execution` | Request a governed send | BLOCK or PENDING_HUMAN_APPROVAL, ticket, audit fingerprint |
-| `audit_chain_verify` | Verify audit integrity | validity, entry count, chain head |
-
-All outputs explicitly include `execution_authorized: false` where relevant.
+1. The MCP client calls `campaign_preflight_check`.
+2. If deterministic QA passes, the client may call `campaign_request_execution`.
+3. The gate evaluates the send request. A blocked request creates no approval record.
+4. An eligible request is recorded in SQLite with a durable ticket, source ticket,
+   campaign ID, request payload, payload SHA-256, policy SHA-256, required
+   reviewer count, and the allowed reviewer roles.
+5. Human decisions are recorded transactionally. The requester cannot approve
+   their own request, a reviewer cannot decide the same ticket twice, roles are
+   checked against the policy snapshot, and dual approval requires two distinct
+   reviewers.
+6. Rejection is terminal. Approval status is a review outcome only.
 
 ## Configuration
 
 - `ACC_GATE_POLICY`: optional policy YAML path.
-- `ACC_GATE_AUDIT`: audit JSONL path (defaults to `audit.jsonl`).
+- `ACC_GATE_AUDIT`: hash-chained audit JSONL path.
+- `ACC_GATE_APPROVAL_DB`: SQLite database path; defaults to
+  `approval_queue.sqlite3`.
 
-Use synthetic data only. The bundled backend is a mock Campaign instance;
-this phase does not connect to or execute against a production Adobe Campaign
-environment.
+The database uses SQLite WAL mode, foreign keys, a busy timeout and
+transactional state changes. Back it up and restrict filesystem permissions.
+Use a durable volume in a hosted environment.
 
-## Security notes and known limitations
+## Store API
 
-- The policy engine is deterministic and fails closed for unknown tools.
-- The audit chain is tamper-evident; it is not immutable storage or a digital
-  signature. Protect the audit file and retain external copies for durable
-  evidence.
-- Approval tickets currently use the existing in-process approval queue and
-  are not yet wired to a separate reviewer UI. A restart loses pending
-  tickets. Production deployment requires a connected human approval
-  surface, persistent storage, authenticated approver identity, authorization
-  controls and concurrency-safe state transitions.
-- This phase intentionally does not introduce execution tokens. A token is
-  not a substitute for human authorization. Any future token must be
-  cryptographically signed, single-use, short-lived, bound to the exact
-  campaign payload and policy version, and revalidated at execution time.
-- No campaign execution is exposed by this MCP facade.
+The Python store is available as `PersistentApprovalStore`:
+
+- `create_request(...)` persists an approval request and binds it to payload
+  and policy digests.
+- `get_request(ticket)` retrieves one request and its reviewer decisions.
+- `list_requests(status, limit)` lists pending or historical requests.
+- `decide(ticket, reviewer, role, decision, reason)` records an authorized
+  human decision.
+
+The MCP server exposes no approval or rejection tool. The durable store is
+currently a service-layer primitive for a future authenticated reviewer
+surface; it does not yet expose a web reviewer UI or HTTP decision endpoint.
+
+## Critical execution boundary
+
+**An APPROVED ledger record does not authorize or execute a Campaign send.**
+This phase deliberately does not mint an execution token, call
+`AgentGate.approve`, or invoke the Campaign backend. The existing in-process
+`AgentGate` approval queue remains separate. Phase 3 must connect a
+reviewer-authenticated surface to the policy re-check and execution path using
+a signed, short-lived, single-use authorization bound to the exact payload,
+policy digest and audit fingerprint. Until then, treat this phase as durable
+review evidence only.
+
+No production Adobe Campaign connector is included. The bundled backend and
+examples remain synthetic.
 
 ## Tests
 
 ```bash
-python -m pytest -q tests/test_policy_server.py tests/test_gate.py
+python -m pytest -q tests/test_approval_store.py tests/test_policy_server.py tests/test_gate.py
 ```
