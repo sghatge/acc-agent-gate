@@ -400,3 +400,17 @@ does not accept client-supplied identities and does not execute campaigns.
 
 An approved ledger record is not execution authorization. Put any remote
 deployment behind HTTPS, rate limiting and managed secrets.
+
+## Phase 4 — Signed Execution Authorization
+
+The separate execution-authorization library adds short-lived HMAC-signed,
+single-use permits bound to the approved payload, policy digest, audit
+fingerprint and distinct human approvers. It re-runs QA/policy checks at
+issuance and consumption and persists consumed JTIs to prevent replay.
+
+- Reference implementation: `acc_agent_gate.execution_authorizer.ExecutionAuthorizer`
+- Documentation and integration boundary: [Signed Execution Authorization](docs/EXECUTION_AUTHORIZATION.md)
+- Tests: `tests/test_execution_authorizer.py`
+
+This is a synthetic-backend reference implementation only. No production
+Adobe Campaign connector or agent-callable execution tool is provided.
