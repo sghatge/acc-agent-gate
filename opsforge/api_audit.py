@@ -29,10 +29,10 @@ class HashChainAuditLog:
         with self._lock:
             previous_hash = _GENESIS
             if self.path.exists() and self.path.stat().st_size:
-                with self.path.open("r", encoding="utf-8") as stream:
-                    for line in stream:
-                        if line.strip():
-                            previous_hash = json.loads(line)["hash"]
+                verification = verify_audit_log(self.path)
+                if not verification["valid"]:
+                    raise ValueError("Existing OPSFORGE audit chain failed verification.")
+                previous_hash = verification["last_hash"]
 
             record = dict(event)
             record["previous_hash"] = previous_hash
