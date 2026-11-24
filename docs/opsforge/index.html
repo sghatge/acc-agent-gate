@@ -69,16 +69,47 @@ document.querySelectorAll("[data-agent]").forEach(b=>b.addEventListener("click",
 function value(id){return document.getElementById(id).value.trim()}
 function number(id){const n=Number(value(id));if(!Number.isFinite(n)||n<0)throw new Error("Enter a valid non-negative number for "+id+".");return n}
 function show(data){document.getElementById("result-body").textContent=JSON.stringify(data,null,2);document.getElementById("result").classList.add("show")}
-function run(){
+async function run(){
  try{
  let out;
  if(active==="research"){const q=value("research-q"),s=value("research-sources").split("\n").map(x=>x.trim()).filter(Boolean);if(!q||!s.length)throw new Error("Add a research question and at least one source reference.");out={agent:"research",status:"draft",question:q,source_count:s.length,sources:s,output:"Task validated. In the Python runtime, set use_gemini=true to request a research report. This browser showcase does not call an LLM.",evidence_note:"Source references are supplied by the operator and are not independently verified."};}
  if(active==="crm"){const o=value("crm-objective"),c=value("crm-context"),constraints=value("crm-constraints");if(!o)throw new Error("Enter an objective.");out={agent:"crm_operations",status:"draft",objective:o,context:c,constraints:constraints?[constraints]:[],output:"Task validated. The Python agent can generate an advisory with prioritised recommendations, 30/60/90-day roadmap, KPIs, risks and controls when configured with Gemini.",execution_scope:"advisory_only"};}
  if(active==="qa"){const market=value("qa-market").toUpperCase(),count=number("qa-count"),proof=value("qa-proof").toLowerCase()==="present",consent=value("qa-consent").toLowerCase()==="present",unsub=value("qa-unsub").toLowerCase()==="present",subject=value("qa-subject");const checks=[{check:"proof_signoff",passed:proof,severity:"blocker"},{check:"consent_filter",passed:consent,severity:"blocker"},{check:"unsubscribe_link",passed:unsub,severity:"blocker"},{check:"subject_length",passed:subject.length<=50,severity:"warning"}];const blockers=checks.filter(x=>!x.passed&&x.severity==="blocker").map(x=>x.check),warnings=checks.filter(x=>!x.passed&&x.severity==="warning").map(x=>x.check);out={agent:"adobe_campaign_qa",status:blockers.length?"blocked":"review_required",market,target_count:count,checks,blockers,warnings,send_recommendation:blockers.length?"hold":"eligible_for_human_review",execution_scope:"synthetic_demo_only",note:"Illustrative browser checks only; the production Python QA agent uses the repository's deterministic QA rules and supported market configuration."};}
  if(active==="analytics"){const sends=number("an-sends"),delivered=number("an-delivered"),opens=number("an-opens"),clicks=number("an-clicks"),conversions=number("an-conversions"),bounces=number("an-bounces");if(delivered>sends||opens>delivered||clicks>delivered||bounces>sends)throw new Error("Counts must be consistent: delivered ≤ sends; opens and clicks ≤ delivered; bounces ≤ sends.");const pct=(a,b)=>b?Math.round(a/b*10000)/100:null;const kpis={sends,delivered,delivery_rate_pct:pct(delivered,sends),bounce_rate_pct:pct(bounces,sends),open_rate_pct:pct(opens,delivered),click_through_rate_pct:pct(clicks,delivered),click_to_open_rate_pct:pct(clicks,opens),conversion_rate_pct:pct(conversions,clicks)};const insights=[];if(kpis.bounce_rate_pct!==null&&kpis.bounce_rate_pct>1.5)insights.push("Bounce rate exceeds the demo threshold of 1.5%; investigate bounce class and list quality.");if(kpis.delivery_rate_pct!==null&&kpis.delivery_rate_pct<98)insights.push("Delivery rate is below 98%; segment failures by ISP, market and bounce class.");out={agent:"marketing_analytics",status:"completed",period:"sample",kpis,insights,metric_notes:"Open/click rates use delivered volume; CTOR uses opens; conversion rate uses clicks. Zero denominators return null."};}
- show(out);
+ if(document.getElementById("execution-mode").value==="api"){
+   const task=buildApiTask();
+   const response=await callApi(task);
+   show(response);
+ }else{show(out)}
  }catch(e){show({status:"input_error",message:e.message})}
 }
+function buildApiTask(){
+ if(active==="research")return {question:value("research-q"),sources:value("research-sources").split("\n").map(x=>x.trim()).filter(Boolean),use_gemini:false};
+ if(active==="crm")return {objective:value("crm-objective"),context:value("crm-context"),constraints:value("crm-constraints")?[value("crm-constraints")]:[],use_gemini:false};
+ if(active==="qa")return {delivery:{id:"OPSFORGE_UI_TEST",internal_name:"OPSFORGE_UI_TEST",market:value("qa-market").toUpperCase(),label:"OPSFORGE dashboard QA input",subject:value("qa-subject"),preheader:value("qa-preheader"),body:value("qa-body"),target_count:number("qa-count"),scheduled_local:value("qa-scheduled"),typology:"TY_MARKETING_EU",proof_sent:value("qa-proof").toLowerCase()==="present",seed_list:value("qa-seed").toLowerCase()==="present",consent_filter:value("qa-consent").toLowerCase()==="present"},use_gemini:false};
+ if(active==="analytics")return {period:"Dashboard input",campaigns:[{name:"Dashboard campaign",sends:number("an-sends"),delivered:number("an-delivered"),opens:number("an-opens"),clicks:number("an-clicks"),conversions:number("an-conversions"),bounces:number("an-bounces"),revenue:0}],use_gemini:false};
+ throw new Error("Unsupported agent selection.");
+}
+async function callApi(task){
+ const base=value("api-url").replace(/\/+$/,"");
+ const token=value("api-token");
+ if(!base||!token)throw new Error("Enter the API base URL and bearer token.");
+ let parsed;
+ try{parsed=new URL(base)}catch(_){throw new Error("Enter a valid API URL.")}
+ const localHost=["localhost","127.0.0.1","::1"].includes(parsed.hostname);
+ if(parsed.protocol!=="https:"&&!(parsed.protocol==="http:"&&localHost))throw new Error("Remote API URLs must use HTTPS.");
+ const routes={research:"research",crm:"crm_operations",qa:"adobe_campaign_qa",analytics:"marketing_analytics"};
+ const endpoint=base+"/api/agents/"+routes[active]+"/run";
+ document.getElementById("run-status").textContent="Calling authenticated API…";
+ try{
+   const response=await fetch(endpoint,{method:"POST",headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json","X-OPSFORGE-Actor":"dashboard-user"},body:JSON.stringify(task),cache:"no-store"});
+   const body=await response.json();
+   document.getElementById("run-status").textContent=response.ok?"API execution complete":"API returned HTTP "+response.status;
+   if(!response.ok)return {status:"api_error",http_status:response.status,...body};
+   return body;
+ }catch(error){document.getElementById("run-status").textContent="API connection failed";throw new Error("Could not reach the API. Check the service, HTTPS and OPSFORGE_CORS_ORIGINS. "+error.message)}
+}
+document.getElementById("execution-mode").addEventListener("change",()=>{const enabled=value("execution-mode")==="api";document.getElementById("api-token-wrap").hidden=!enabled;document.getElementById("mode-help").textContent=enabled?"Calls the authenticated Python agent API. Configure the exact dashboard origin in OPSFORGE_CORS_ORIGINS.":"Local mode runs a browser-only synthetic demonstration.";document.getElementById("run-status").textContent=enabled?"Authenticated API mode":"Local browser simulation";});
 document.getElementById("run-agent").addEventListener("click",run);
 document.querySelectorAll(".open-agent").forEach(b=>b.addEventListener("click",()=>{selectAgent(b.dataset.agent);document.querySelector(".workspace").scrollIntoView({behavior:"smooth",block:"start"})}));
 document.getElementById("launch").addEventListener("click",()=>{selectAgent("analytics");document.querySelector(".workspace").scrollIntoView({behavior:"smooth",block:"start"});run()});
