@@ -27,6 +27,7 @@ from opsforge.api_audit import HashChainAuditLog
 from opsforge.orchestrator import Orchestrator
 
 MAX_BODY_BYTES = 64 * 1024
+REQUEST_TIMEOUT_SECONDS = 15
 AGENT_NAMES = {
     "research",
     "crm_operations",
@@ -154,6 +155,11 @@ def create_server(
     class Handler(BaseHTTPRequestHandler):
         server_version = "OPSFORGE-API"
         sys_version = ""
+
+        def setup(self) -> None:
+            # Bound header and body reads so slow clients cannot pin a worker thread.
+            self.request.settimeout(REQUEST_TIMEOUT_SECONDS)
+            super().setup()
 
         def log_message(self, format: str, *args: Any) -> None:
             # Avoid writing request paths, payloads or credentials to stdout.
