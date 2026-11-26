@@ -79,7 +79,7 @@ See the [hosted deployment runbook](docs/opsforge-hosted-deployment.md) and the 
 Install with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uvx --from git+https://github.com/sghatge/acc-agent-gate.git acc-agent-gate-mcp
+uvx --from git+https://github.com/sghatge/acc-agent-gate.git acc-agent-gate
 ```
 
 Or install into an existing Python environment:
@@ -103,7 +103,7 @@ Add this to the Claude Desktop MCP configuration file (Windows: `%APPDATA%\\Clau
       "args": [
         "--from",
         "git+https://github.com/sghatge/acc-agent-gate.git",
-        "acc-agent-gate-mcp"
+        "acc-agent-gate"
       ]
     }
   }
