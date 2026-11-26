@@ -30,7 +30,22 @@ gate = AgentGate(
     policy=load_policy(os.environ.get("ACC_GATE_POLICY")),
     audit=AuditLog(os.environ.get("ACC_GATE_AUDIT", "audit.jsonl")),
 )
-mcp = _Server("acc-agent-gate")
+mcp = _Server(
+    "acc-agent-gate",
+    instructions=(
+        "ACC Agent Gate is a fail-closed governance MCP server for Adobe Campaign Classic. "
+        "It exposes seven policy-gated tools: campaign_discover, schema_browse, query_run, "
+        "delivery_qa, delivery_send, workflow_control, and js_execute. Start with "
+        "campaign_discover, then inspect schemas before bounded queries. Run delivery_qa "
+        "before delivery_send. A needs_approval result is never permission to execute; "
+        "human approval is deliberately not exposed as an agent tool. js_execute only "
+        "analyses scripts and never executes them. All actions use the configured YAML "
+        "policy and append to a hash-chained audit log. The bundled backend is synthetic "
+        "and does not connect to a production Adobe Campaign instance. Never claim that "
+        "a Campaign operation was executed unless a separately configured, human-governed "
+        "adapter confirms it."
+    ),
+)
 
 
 def _out(result: dict[str, Any]) -> str:
