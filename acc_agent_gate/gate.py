@@ -31,8 +31,13 @@ class Decision:
 
 
 def load_policy(path: str | Path | None = None) -> dict[str, Any]:
-    path = Path(path) if path else Path(__file__).resolve().parent.parent / "policy" / "default.yaml"
-    return yaml.safe_load(Path(path).read_text())
+    if path is not None:
+        policy_path = Path(path)
+    else:
+        packaged_policy = Path(__file__).resolve().parent / "default_policy.yaml"
+        source_policy = Path(__file__).resolve().parent.parent / "policy" / "default.yaml"
+        policy_path = packaged_policy if packaged_policy.is_file() else source_policy
+    return yaml.safe_load(policy_path.read_text(encoding="utf-8"))
 
 
 def mask_value(field_name: str, value: Any) -> Any:
