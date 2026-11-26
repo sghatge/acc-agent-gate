@@ -60,6 +60,10 @@ Everything, including what was blocked, goes into a **hash-chained audit log** t
 
 Rebuild it with `python docs/build_showcase.py` after running the scenario.
 
+## Free deployment
+
+See the [zero-cost demo deployment runbook](docs/free-deployment.md) for GitHub Pages and Streamlit Community Cloud. The optional hosted API blueprint requires paid persistent storage and is not part of the zero-budget path.
+
 ## Quick start
 
 ```bash
