@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "acc-agent-gate"
+version = "0.2.0"
+description = "Fail-closed MCP governance layer for Adobe Campaign Classic with YAML policy-as-code, SQL/JS risk inspection, human approval gates and hash-chained audit logs."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+authors = [{ name = "Sangram Himmat Ghatge" }]
+keywords = ["mcp", "adobe-campaign", "ai-governance", "policy-as-code", "martech", "security"]
+dependencies = [
+  "mcp>=1.9,<2.0",
+  "PyYAML>=6.0.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0.0"]
+
+[project.scripts]
+acc-agent-gate = "acc_agent_gate.server:main"
+acc-agent-gate-mcp = "acc_agent_gate.server:main"
+
+[project.urls]
+Homepage = "https://sghatge.github.io/adobe-campaign-v8-governance/"
+Repository = "https://github.com/sghatge/acc-agent-gate"
+"Live Demo" = "https://opsforge-command-centre.streamlit.app/"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["acc_agent_gate*"]
+
+[tool.setuptools.package-data]
+acc_agent_gate = ["default_policy.yaml"]

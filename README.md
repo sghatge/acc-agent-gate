@@ -12,6 +12,12 @@
 
 # ACC Agent Gate
 
+[![CI](https://github.com/sghatge/acc-agent-gate/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/sghatge/acc-agent-gate/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+**Ecosystem:** [Adobe Campaign v8 Governance Hub](https://sghatge.github.io/adobe-campaign-v8-governance/) · [OPSFORGE Command Centre](https://opsforge-command-centre.streamlit.app/) · [GitHub](https://github.com/sghatge/acc-agent-gate)
+
+
 **[🛡️ Deploy the free Streamlit Governance Control Room](https://share.streamlit.io/deploy?repository=sghatge%2Facc-agent-gate&branch=main&mainModule=streamlit_app.py)** · full synthetic QA → human approval → signed permit → mock execution → audit walkthrough.
 
 **[⚡ OPSFORGE Unified Agent Workspace](https://sghatge.github.io/acc-agent-gate/opsforge/)** · explore Research, CRM Operations, Adobe Campaign QA and Marketing Analytics in one interactive synthetic-data showcase.
@@ -70,15 +76,70 @@ See the [hosted deployment runbook](docs/opsforge-hosted-deployment.md) and the 
 
 ### Run it as an MCP server
 
+Install with [uv](https://docs.astral.sh/uv/):
+
 ```bash
-python -m acc_agent_gate.server               # stdio
+uvx --from git+https://github.com/sghatge/acc-agent-gate.git acc-agent-gate
 ```
+
+Or install into an existing Python environment:
+
+```bash
+python -m pip install "git+https://github.com/sghatge/acc-agent-gate.git"
+python -m acc_agent_gate.server
+```
+
+The server uses stdio. Keep standard output reserved for MCP JSON-RPC; diagnostics are written to standard error. Set `ACC_GATE_POLICY` and `ACC_GATE_AUDIT` to override the default policy and audit-log paths. The included backend is synthetic; no production Adobe Campaign connector is shipped.
+
+#### Claude Desktop
+
+Add this to the Claude Desktop MCP configuration file (Windows: `%APPDATA%\\Claude\\claude_desktop_config.json`):
 
 ```json
-{ "mcpServers": { "acc-agent-gate": { "command": "python", "args": ["-m", "acc_agent_gate.server"] } } }
+{
+  "mcpServers": {
+    "acc-agent-gate": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/sghatge/acc-agent-gate.git",
+        "acc-agent-gate"
+      ]
+    }
+  }
+}
 ```
 
-The agent gets `campaign_discover`, `schema_browse`, `query_run`, `delivery_qa`, `delivery_send`, `workflow_control` and `js_execute`. Approvals are **not** exposed as tools. An agent can ask, but only a human can say yes.
+#### Cursor
+
+Add this to your project-level `.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "acc-agent-gate": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/sghatge/acc-agent-gate.git",
+        "acc-agent-gate-mcp"
+      ]
+    }
+  }
+}
+```
+
+#### Claude Code
+
+Run from a terminal after installing Claude Code:
+
+```bash
+claude mcp add --transport stdio acc-agent-gate -- uvx --from git+https://github.com/sghatge/acc-agent-gate.git acc-agent-gate-mcp
+```
+
+To verify the connection, use `claude mcp list` or the MCP client's server diagnostics. Restart the desktop client after changing its configuration.
+
+The agent gets `campaign_discover`, `schema_browse`, `query_run`, `delivery_qa`, `delivery_send`, `workflow_control` and `js_execute`. `query_run` accepts `select_csv` and a flat `where_json` string; `workflow_control.action` is constrained to `start`, `pause` or `stop`. Approvals are **not** exposed as tools. An agent can ask, but only a human can say yes.
 
 ## Design principles
 
