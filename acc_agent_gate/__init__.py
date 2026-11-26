@@ -5,4 +5,4 @@ from .mock_instance import MockCampaignInstance
 from .qa import run_qa
 
 __all__ = ["AgentGate", "AuditLog", "Decision", "MockCampaignInstance", "load_policy", "run_qa"]
-__version__ = "0.1.0"
+__version__ = "0.2.0"
