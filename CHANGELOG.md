@@ -13,7 +13,7 @@ All notable changes to ACC Agent Gate are documented here.
 - Added typed MCP policy-server, reviewer API and Streamlit governance-control-room documentation.
 - Clarified synthetic-backend and non-production execution boundaries.
 
-## [0.1.0] - 2026-11-20
+## [0.1.0]
 
 - Initial ACC Agent Gate reference implementation.
 - Added YAML policy evaluation, SQL/JavaScript risk analysis and pre-send delivery QA.
