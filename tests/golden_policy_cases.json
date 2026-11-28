@@ -1,0 +1,50 @@
+[
+  {
+    "id": "unknown-tool-fails-closed",
+    "tool": "recipient.delete_all",
+    "args": {},
+    "expected_decision": "block"
+  },
+  {
+    "id": "sql-write-is-blocked",
+    "tool": "query.run",
+    "args": {"sql": "DELETE FROM NmsRecipient"},
+    "expected_decision": "block"
+  },
+  {
+    "id": "recipient-email-is-masked",
+    "tool": "query.run",
+    "args": {"schema": "nms:recipient", "select": ["@email"], "limit": 3},
+    "expected_decision": "allow_masked"
+  },
+  {
+    "id": "send-with-qa-blocker-is-blocked",
+    "tool": "delivery.send",
+    "args": {"delivery_id": "DM_BF26_SI"},
+    "expected_decision": "block"
+  },
+  {
+    "id": "qa-passed-send-still-needs-human-approval",
+    "tool": "delivery.send",
+    "args": {"delivery_id": "DM_BF26_HR"},
+    "expected_decision": "needs_approval"
+  },
+  {
+    "id": "critical-compliance-workflow-is-blocked",
+    "tool": "workflow.control",
+    "args": {"workflow": "WKF_GDPR_Purge", "action": "pause"},
+    "expected_decision": "block"
+  },
+  {
+    "id": "javascript-write-is-blocked",
+    "tool": "js.execute",
+    "args": {"script": "xtk.session.Write(<recipient/>)"},
+    "expected_decision": "block"
+  },
+  {
+    "id": "read-only-javascript-is-dry-run",
+    "tool": "js.execute",
+    "args": {"script": "xtk.queryDef.create(<queryDef/>).ExecuteQuery()"},
+    "expected_decision": "dry_run"
+  }
+]
