@@ -518,3 +518,16 @@ cannot make decisions or execute actions.
 **Reproducibility:** start with the setup and usage instructions in this README and the linked project documentation. Run the repository's available checks before changing behaviour; if no test command is documented, treat that as a validation task rather than assuming tests pass.
 
 **Safe-use boundary:** this is an independent portfolio project. Use synthetic or sanitized examples. Do not treat sample configurations, assessments, checklists or simulated outputs as production approvals or connect the project to customer data or live enterprise systems without independent security, privacy, legal and operational review. Review dependencies, licences and secrets handling before deployment.
+
+
+## Golden policy regression cases
+
+The synthetic regression contract in `tests/golden_policy_cases.json` captures representative policy outcomes: unknown-tool fail-closed, SQL write blocking, PII masking, QA-blocked sends, human approval, critical workflow protection, JavaScript write blocking and read-only dry-run handling.
+
+Run the cases with:
+
+```bash
+python -m pytest -q tests/test_golden_policy_cases.py
+```
+
+These golden cases complement the existing unit and authorization tests. They use the mock Campaign instance only and do not connect to a live Adobe Campaign environment.
